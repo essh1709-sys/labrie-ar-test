@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4b1d2c">
+<title>Labrie — От сердца к сердцу через сыр</title>
+<style>
+:root{--wine:#4b1d2c;--gold:#f1ca91}*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#170910;color:#fff7ed;font:15px/1.5 system-ui,-apple-system,sans-serif}
+#ar{position:fixed;inset:0;overflow:hidden}#ar video,#ar canvas{position:absolute;top:0;left:0}
+#shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(#15050dba,transparent 30%,transparent 63%,#160710dc)}
+#intro{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#865062,#421728 66%,#1d0c16);display:flex;justify-content:center;align-items:center;text-align:center;padding:25px;z-index:5}
+#intro.hidden{display:none}.panel{max-width:390px;width:100%}
+.small{font-size:11px;letter-spacing:.18em;color:#f7d7a8;font-weight:800}
+h1{font:normal 34px/1.14 Georgia,serif;margin:18px 0}h1 em{color:var(--gold)}
+p{color:#f1ded7;line-height:1.6;margin:0 0 22px}
+button,a.btn{background:var(--gold);border:0;color:#421728;font:700 15px system-ui,sans-serif;border-radius:50px;min-height:49px;padding:13px 22px;cursor:pointer;text-decoration:none}
+button.secondary{background:#ffffff12;border:1px solid #f1ca9199;color:#fff7ed}
+button:disabled{opacity:.65}#intro button{margin:4px}
+#hud{display:none;position:fixed;inset:0;pointer-events:none}
+header{position:absolute;top:0;left:0;right:0;text-align:center;padding:calc(env(safe-area-inset-top) + 16px) 18px}
+.logo{font:italic 26px Georgia,serif}.logo b{font:900 22px Arial,sans-serif}
+#status{margin-top:12px;font-size:13px;text-shadow:0 1px 8px #000}
+footer{position:absolute;bottom:0;left:0;right:0;text-align:center;padding:20px 12px calc(20px + env(safe-area-inset-bottom))}
+#actions{pointer-events:auto;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#actions button,#actions a{font-size:13px;min-height:44px;padding:11px 14px}
+#preview{position:fixed;z-index:10;inset:0;background:#1d0b15;display:none;flex-direction:column;align-items:center;justify-content:center;padding:18px}
+#preview video{display:block;max-width:min(100%,420px);max-height:72dvh;border-radius:9px;box-shadow:0 0 40px #0008}
+#preview button{margin-top:20px}
+#error{white-space:pre-line;font-size:13px;color:#fff3de;margin-top:16px}
+#diagnostic{max-width:370px;margin:12px auto 0;white-space:pre-line;font-size:13px;color:#ffe7cc;text-shadow:0 1px 6px #000;display:none}
+#retryCamera{display:none}
+#livePreview{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:0}
+#ar canvas{z-index:1}
+
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script></head>
+<body>
+<div id="ar"></div><div id="shade"></div>
+<div id="intro"><div class="panel"><div class="small">LABRIE · ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ</div><h1>От сердца к сердцу <em>через сыр</em></h1><p>На открытке оживают сырные текстуры: Бельпер раскалывается на сухие крошки, а сыр с белой плесенью раскрывает сливочную сердцевину. Наведите камеру на бордовую открытку с сердцем.</p><button id="start">Открыть камеру</button><button id="demo" class="secondary">Посмотреть видео</button><div id="error"></div><p style="font-size:12px;margin-top:17px">Это согласованная композиция Labrie. Видео показывается на открытке после её распознавания камерой.</p></div></div>
+<div id="hud"><header><div class="logo">Ла <b>БРИ</b></div><div id="status">Наведите камеру на открытку</div></header>
+<footer><div id="actions"><button id="replay">Повторить</button><button id="retryCamera" class="secondary">Повторить запуск AR</button><button id="watch" class="secondary">Видео без камеры</button><a class="btn" target="_blank" rel="noopener" href="https://labrie.ru/catalog/nabory/">Подарки Labrie</a></div><div id="diagnostic" role="status"></div></footer></div>
+<div id="preview"><video id="previewVideo" controls muted playsinline webkit-playsinline></video><button id="close" type="button">Вернуться</button></div>
+<video id="arVideo" muted playsinline webkit-playsinline preload="auto" style="position:absolute;left:-999px;top:-999px;width:1px;height:1px"></video>
+<script type="module">
+const $=id=>document.getElementById(id);
+let cachedURL, mindar, anchor, rendering=false, previewActive=false, cameraStream=null, cameraPreview=null;
+const arVideo=$('arVideo'), previewVideo=$('previewVideo');
+function status(msg){$('status').textContent=msg}
+function report(err){console.error(err);let message=err?.name==='NotAllowedError'?'Доступ к камере запрещён. Разрешите доступ для этого сайта в настройках браузера.':err?.name==='NotFoundError'?'Камера телефона не найдена.':(err?.message||String(err));$('error').textContent='Ошибка запуска: '+message+'\nОткройте ссылку в Safari или Chrome, не во встроенном браузере QR-сканера.';$('diagnostic').textContent=message;$('diagnostic').style.display='block'}
+async function videoURL(){
+ if(cachedURL)return cachedURL;
+ const r=await fetch('./assets/labrie-approved-animation.mp4.b64.txt');
+ if(!r.ok)throw new Error('Не найден файл видео (HTTP '+r.status+')');
+ const base64=(await r.text()).trim(), raw=atob(base64), bytes=new Uint8Array(raw.length);
+ for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+ cachedURL=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
+ arVideo.src=cachedURL;previewVideo.src=cachedURL;arVideo.load();previewVideo.load();
+ return cachedURL;
+}
+async function showPreview(){
+ try{await videoURL();arVideo.pause();previewActive=true;$('preview').style.display='flex';previewVideo.currentTime=0;await previewVideo.play()}catch(e){report(e)}
+}
+function closePreview(){previewActive=false;$('preview').style.display='none';previewVideo.pause();if(rendering&&anchor?.group.visible)arVideo.play().catch(()=>{})}
+$('demo').onclick=showPreview;$('watch').onclick=showPreview;$('close').onclick=closePreview;
+$('replay').onclick=()=>{arVideo.pause();arVideo.currentTime=0;arVideo.play().catch(()=>status('Для воспроизведения нажмите «Повторить»'))};
+function releaseCameraPreview(){
+  if(cameraStream){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null}
+  if(cameraPreview){cameraPreview.remove();cameraPreview=null}
+}
+$('retryCamera').onclick=async()=>{
+  releaseCameraPreview();$('intro').classList.remove('hidden');$('hud').style.display='none';$('diagnostic').style.display='none';$('retryCamera').style.display='none';
+  try{await mindar?.stop()}catch(e){}mindar=null;
+};
+$('start').onclick=async()=>{
+ $('start').disabled=true;$('start').textContent='Запрашиваем камеру…';$('error').textContent='';$('diagnostic').style.display='none';$('retryCamera').style.display='none';
+ try{
+  if(!window.isSecureContext)throw new Error('Для камеры нужна защищённая HTTPS-ссылка');
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Этот браузер не предоставляет доступ к камере. Попробуйте Safari на iPhone или Chrome на Android.');
+  // ВАЖНО: системный запрос камеры стартует прямо из нажатия, без ожидания загрузки файлов.
+  const cameraRequest=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  cameraStream=await cameraRequest;
+  cameraPreview=document.createElement('video');
+  cameraPreview.id='livePreview';cameraPreview.muted=true;cameraPreview.autoplay=true;cameraPreview.playsInline=true;
+  cameraPreview.setAttribute('playsinline','');
+  cameraPreview.srcObject=cameraStream;$('ar').appendChild(cameraPreview);
+  try{await cameraPreview.play()}catch(e){console.warn('Preview play',e)}
+  $('intro').classList.add('hidden');$('hud').style.display='block';
+  status('Камера работает ✓ Загружаем анимацию сыров Labrie…');
+  // После живого изображения с камеры загружаем видео, маркер и AR-библиотеки.
+  await videoURL();
+  arVideo.muted=true;try{await arVideo.play();arVideo.pause();arVideo.currentTime=0}catch(e){console.debug('Video unlock',e)}
+  status('Камера работает ✓ Загружаем распознавание открытки…');
+  const marker=await fetch('./targets.mind',{cache:'no-store'});
+  if(!marker.ok)throw new Error('Файл распознавания открытки не найден (HTTP '+marker.status+')');
+  const markerURL=URL.createObjectURL(await marker.blob());
+  status('Камера работает ✓ Подключаем AR…');
+  const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
+  mindar=new MindARThree({container:$('ar'),imageTargetSrc:markerURL,maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+  anchor=mindar.addAnchor(0);
+  const texture=new THREE.VideoTexture(arVideo);
+  texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;
+  const material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
+  // Кадр видео адаптируем к фактическому соотношению сторон.
+  const aspect=600/800;
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(.88,.88/aspect),material);
+  plane.position.set(0,.21,.06);anchor.group.add(plane);
+  anchor.onTargetFound=()=>{
+    status('Открытка распознана · Сыры оживают');
+    if(!previewActive){arVideo.currentTime=0;arVideo.play().catch(()=>status('Открытка распознана. Нажмите «Повторить»'))}
+  };
+  anchor.onTargetLost=()=>{arVideo.pause();status('Снова наведите камеру на открытку')};
+  arVideo.onended=()=>status('Анимация завершена · Можно повторить');
+  releaseCameraPreview();
+  status('Включаем дополненную реальность…');
+  await mindar.start();
+  rendering=true;status('Наведите камеру на открытку с сердцем');
+  mindar.renderer.setAnimationLoop(()=>mindar.renderer.render(mindar.scene,mindar.camera));
+ }catch(e){
+  report(e);
+  if(cameraStream){status('Камера работает ✓ Ошибка загрузки AR');$('retryCamera').style.display='inline-block'}
+  else{
+    try{await mindar?.stop()}catch(_){}
+    if(cameraPreview){releaseCameraPreview()}
+    $('intro').classList.remove('hidden');$('hud').style.display='none';
+  }
+ }finally{$('start').disabled=false;$('start').textContent='Открыть камеру'}
+};
+</script></body></html>
