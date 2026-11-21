@@ -1,126 +1,123 @@
-<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4b1d2c">
-<title>Labrie — От сердца к сердцу через сыр</title>
+<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4b1d2c">
+<title>Ла БРИ — Живое сырное сердце</title>
 <style>
-:root{--wine:#4b1d2c;--gold:#f1ca91}*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#170910;color:#fff7ed;font:15px/1.5 system-ui,-apple-system,sans-serif}
-#ar{position:fixed;inset:0;overflow:hidden}#ar video,#ar canvas{position:absolute;top:0;left:0}
-#shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(#15050dba,transparent 30%,transparent 63%,#160710dc)}
-#intro{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#865062,#421728 66%,#1d0c16);display:flex;justify-content:center;align-items:center;text-align:center;padding:25px;z-index:5}
-#intro.hidden{display:none}.panel{max-width:390px;width:100%}
-.small{font-size:11px;letter-spacing:.18em;color:#f7d7a8;font-weight:800}
-h1{font:normal 34px/1.14 Georgia,serif;margin:18px 0}h1 em{color:var(--gold)}
-p{color:#f1ded7;line-height:1.6;margin:0 0 22px}
-button,a.btn{background:var(--gold);border:0;color:#421728;font:700 15px system-ui,sans-serif;border-radius:50px;min-height:49px;padding:13px 22px;cursor:pointer;text-decoration:none}
-button.secondary{background:#ffffff12;border:1px solid #f1ca9199;color:#fff7ed}
-button:disabled{opacity:.65}#intro button{margin:4px}
-#hud{display:none;position:fixed;inset:0;pointer-events:none}
-header{position:absolute;top:0;left:0;right:0;text-align:center;padding:calc(env(safe-area-inset-top) + 16px) 18px}
-.logo{font:italic 26px Georgia,serif}.logo b{font:900 22px Arial,sans-serif}
-#status{margin-top:12px;font-size:13px;text-shadow:0 1px 8px #000}
-footer{position:absolute;bottom:0;left:0;right:0;text-align:center;padding:20px 12px calc(20px + env(safe-area-inset-bottom))}
-#actions{pointer-events:auto;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-#actions button,#actions a{font-size:13px;min-height:44px;padding:11px 14px}
-#preview{position:fixed;z-index:10;inset:0;background:#1d0b15;display:none;flex-direction:column;align-items:center;justify-content:center;padding:18px}
-#preview video{display:block;max-width:min(100%,420px);max-height:72dvh;border-radius:9px;box-shadow:0 0 40px #0008}
-#preview button{margin-top:20px}
-#error{white-space:pre-line;font-size:13px;color:#fff3de;margin-top:16px}
-#diagnostic{max-width:370px;margin:12px auto 0;white-space:pre-line;font-size:13px;color:#ffe7cc;text-shadow:0 1px 6px #000;display:none}
-#retryCamera{display:none}
-#livePreview{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:0}
-#ar canvas{z-index:1}
-
+:root{--burgundy:#4b1d2c;--gold:#edc994}*{box-sizing:border-box}html,body{margin:0;height:100%;background:#1b0d14;color:#fff6ea;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+#ar{position:fixed;inset:0;overflow:hidden}#ar video,#ar canvas{position:absolute;left:0;top:0}#shade{position:fixed;inset:0;background:linear-gradient(#1a0713b5,transparent 25%,transparent 65%,#1a0713db);pointer-events:none}
+#intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;text-align:center;padding:25px;background:radial-gradient(circle at 50% 20%,#834050,#491b2b 60%,#1b0d14);overflow:auto}#intro.hidden{display:none}.panel{max-width:390px;width:100%;margin:auto}h1{font:normal 36px/1.15 Georgia,serif;margin:13px 0}h1 em{color:var(--gold)}.eyebrow{font-size:11px;letter-spacing:.14em;color:var(--gold);font-weight:750}p{line-height:1.55;color:#f1ddd1;margin:17px auto 22px}button,a.action{border:0;border-radius:50px;background:var(--gold);color:#461b2b;padding:14px 22px;min-height:48px;font-size:15px;font-weight:750;cursor:pointer;text-decoration:none}button.alt{background:#ffffff16;color:#fff5e9;border:1px solid #ecd0ac90}button:disabled{opacity:.6}
+#intro .panel button{margin:4px}#error{font-size:13px;white-space:pre-wrap;color:#fff2df;min-height:10px}
+#ui{display:none;position:fixed;inset:0;pointer-events:none}header{position:absolute;top:0;left:0;right:0;text-align:center;padding:calc(env(safe-area-inset-top) + 15px) 10px}.brand{font:italic 27px Georgia,serif}.brand b{font:900 22px Arial,sans-serif}#status{font-size:12px;margin-top:10px;text-shadow:0 2px 6px #10050b}footer{position:absolute;bottom:0;width:100%;text-align:center;padding:15px 12px calc(env(safe-area-inset-bottom) + 18px)}#actions{pointer-events:auto;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}#actions button,#actions a{font-size:13px;min-height:42px;padding:11px 14px}
+#modal{display:none;position:fixed;z-index:12;inset:0;background:radial-gradient(circle at center,#512339,#190d17);align-items:center;justify-content:center;flex-direction:column;gap:15px;padding:17px;text-align:center}#previewStage{background:linear-gradient(#4e2639,#150b14);padding:16px;border-radius:12px;max-width:100%;box-shadow:0 12px 38px #0006}#preview{display:block;width:min(90vw,460px);height:auto;max-height:58dvh;object-fit:contain}
+#livePreview{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}#ar canvas{z-index:1}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script></head>
-<body>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
+</head><body>
 <div id="ar"></div><div id="shade"></div>
-<div id="intro"><div class="panel"><div class="small">LABRIE · ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ</div><h1>От сердца к сердцу <em>через сыр</em></h1><p>На открытке оживают сырные текстуры: Бельпер раскалывается на сухие крошки, а сыр с белой плесенью раскрывает сливочную сердцевину. Наведите камеру на бордовую открытку с сердцем.</p><button id="start">Открыть камеру</button><button id="demo" class="secondary">Посмотреть видео</button><div id="error"></div><p style="font-size:12px;margin-top:17px">Это согласованная композиция Labrie. Видео показывается на открытке после её распознавания камерой.</p></div></div>
-<div id="hud"><header><div class="logo">Ла <b>БРИ</b></div><div id="status">Наведите камеру на открытку</div></header>
-<footer><div id="actions"><button id="replay">Повторить</button><button id="retryCamera" class="secondary">Повторить запуск AR</button><button id="watch" class="secondary">Видео без камеры</button><a class="btn" target="_blank" rel="noopener" href="https://labrie.ru/catalog/nabory/">Подарки Labrie</a></div><div id="diagnostic" role="status"></div></footer></div>
-<div id="preview"><video id="previewVideo" controls muted playsinline webkit-playsinline></video><button id="close" type="button">Вернуться</button></div>
-<video id="arVideo" muted playsinline webkit-playsinline preload="auto" style="position:absolute;left:-999px;top:-999px;width:1px;height:1px"></video>
+<div id="intro"><div class="panel"><div class="eyebrow">AR · РЕМЕСЛЕННАЯ СЫРОВАРНЯ ЛА БРИ</div><h1>От сердца к сердцу <em>через сыр</em></h1><p>Бельпер раскалывается и осыпается сухими крошками. Из сыра с белой плесенью медленно вытекает сливочная сердцевина. Всё происходит над настоящей открыткой.</p><button id="start">Открыть камеру</button><button id="demo" class="alt">Посмотреть анимацию</button><p id="error"></p></div></div>
+<div id="ui"><header><div class="brand">Ла <b>БРИ</b></div><div id="status">Наведите камеру на бордовую открытку</div></header><footer><div id="actions"><button id="replay">Повторить анимацию</button><button id="watch" class="alt">Без камеры</button><a class="action" href="https://labrie.ru/catalog/nabory/" target="_blank" rel="noopener">Подарки Labrie</a></div></footer></div>
+<div id="modal"><div class="eyebrow">КАК ОЖИВАЮТ СЫРЫ</div><div id="previewStage"><canvas id="preview" width="460" height="332"></canvas></div><div id="previewStatus">Раскол Бельпера и сливочная сердцевина</div><button id="close">Вернуться к открытке</button></div>
 <script type="module">
 const $=id=>document.getElementById(id);
-let cachedURL, mindar, anchor, rendering=false, previewActive=false, cameraStream=null, cameraPreview=null;
-const arVideo=$('arVideo'), previewVideo=$('previewVideo');
-function status(msg){$('status').textContent=msg}
-function report(err){console.error(err);let message=err?.name==='NotAllowedError'?'Доступ к камере запрещён. Разрешите доступ для этого сайта в настройках браузера.':err?.name==='NotFoundError'?'Камера телефона не найдена.':(err?.message||String(err));$('error').textContent='Ошибка запуска: '+message+'\nОткройте ссылку в Safari или Chrome, не во встроенном браузере QR-сканера.';$('diagnostic').textContent=message;$('diagnostic').style.display='block'}
-async function videoURL(){
- if(cachedURL)return cachedURL;
- const r=await fetch('./assets/labrie-approved-animation.mp4.b64.txt');
- if(!r.ok)throw new Error('Не найден файл видео (HTTP '+r.status+')');
- const base64=(await r.text()).trim(), raw=atob(base64), bytes=new Uint8Array(raw.length);
- for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
- cachedURL=URL.createObjectURL(new Blob([bytes],{type:'video/mp4'}));
- arVideo.src=cachedURL;previewVideo.src=cachedURL;arVideo.load();previewVideo.load();
- return cachedURL;
+const W=460,H=332,COLS=4,FRAMES=16,DURATION=8.4;
+let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,tracked=false,trackingStarted=0;
+let previewActive=false,previewStarted=0,previewStream=null,previewCamera=null,ctxAR=null;
+const canvasAR=document.createElement('canvas');canvasAR.width=W;canvasAR.height=H;ctxAR=canvasAR.getContext('2d',{alpha:true});
+const previewCanvas=$('preview'),ctxPreview=previewCanvas.getContext('2d',{alpha:true});
+function message(s){$('status').textContent=s}
+function fail(e){console.error('Labrie AR:',e);let txt=(e?.name==='NotAllowedError')?'Нет разрешения для камеры. Разрешите доступ к камере в Safari.':e?.message||String(e);$('error').textContent=txt+'\nОткройте страницу в Safari или Chrome и повторите.';message('Ошибка: '+txt)}
+async function loadSheet(){
+ if(sheet)return sheet;
+ if(sheetPromise)return sheetPromise;
+ sheetPromise=(async()=>{
+   const res=await fetch('./assets/labrie-cheese-frames.webp.b64.txt');
+   if(!res.ok)throw new Error('Не удалось загрузить анимацию (HTTP '+res.status+')');
+   const b64=(await res.text()).replace(/\s/g,'');const raw=atob(b64);
+   const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+   const objectUrl=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
+   try{const img=new Image();img.src=objectUrl;await img.decode();sheet=img;return img}
+   finally{URL.revokeObjectURL(objectUrl)}
+ })();try{return await sheetPromise}catch(e){sheetPromise=null;throw e}
 }
-async function showPreview(){
- try{await videoURL();arVideo.pause();previewActive=true;$('preview').style.display='flex';previewVideo.currentTime=0;await previewVideo.play()}catch(e){report(e)}
-}
-function closePreview(){previewActive=false;$('preview').style.display='none';previewVideo.pause();if(rendering&&anchor?.group.visible)arVideo.play().catch(()=>{})}
-$('demo').onclick=showPreview;$('watch').onclick=showPreview;$('close').onclick=closePreview;
-$('replay').onclick=()=>{arVideo.pause();arVideo.currentTime=0;arVideo.play().catch(()=>status('Для воспроизведения нажмите «Повторить»'))};
-function releaseCameraPreview(){
-  if(cameraStream){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null}
-  if(cameraPreview){cameraPreview.remove();cameraPreview=null}
-}
-$('retryCamera').onclick=async()=>{
-  releaseCameraPreview();$('intro').classList.remove('hidden');$('hud').style.display='none';$('diagnostic').style.display='none';$('retryCamera').style.display='none';
-  try{await mindar?.stop()}catch(e){}mindar=null;
-};
-$('start').onclick=async()=>{
- $('start').disabled=true;$('start').textContent='Запрашиваем камеру…';$('error').textContent='';$('diagnostic').style.display='none';$('retryCamera').style.display='none';
- try{
-  if(!window.isSecureContext)throw new Error('Для камеры нужна защищённая HTTPS-ссылка');
-  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Этот браузер не предоставляет доступ к камере. Попробуйте Safari на iPhone или Chrome на Android.');
-  // ВАЖНО: системный запрос камеры стартует прямо из нажатия, без ожидания загрузки файлов.
-  const cameraRequest=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
-  cameraStream=await cameraRequest;
-  cameraPreview=document.createElement('video');
-  cameraPreview.id='livePreview';cameraPreview.muted=true;cameraPreview.autoplay=true;cameraPreview.playsInline=true;
-  cameraPreview.setAttribute('playsinline','');
-  cameraPreview.srcObject=cameraStream;$('ar').appendChild(cameraPreview);
-  try{await cameraPreview.play()}catch(e){console.warn('Preview play',e)}
-  $('intro').classList.add('hidden');$('hud').style.display='block';
-  status('Камера работает ✓ Загружаем анимацию сыров Labrie…');
-  // После живого изображения с камеры загружаем видео, маркер и AR-библиотеки.
-  await videoURL();
-  arVideo.muted=true;try{await arVideo.play();arVideo.pause();arVideo.currentTime=0}catch(e){console.debug('Video unlock',e)}
-  status('Камера работает ✓ Загружаем распознавание открытки…');
-  const marker=await fetch('./targets.mind',{cache:'no-store'});
-  if(!marker.ok)throw new Error('Файл распознавания открытки не найден (HTTP '+marker.status+')');
-  const markerURL=URL.createObjectURL(await marker.blob());
-  status('Камера работает ✓ Подключаем AR…');
-  const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
-  mindar=new MindARThree({container:$('ar'),imageTargetSrc:markerURL,maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
-  anchor=mindar.addAnchor(0);
-  const texture=new THREE.VideoTexture(arVideo);
-  texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;
-  const material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
-  // Кадр видео адаптируем к фактическому соотношению сторон.
-  const aspect=600/800;
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(.88,.88/aspect),material);
-  plane.position.set(0,.21,.06);anchor.group.add(plane);
-  anchor.onTargetFound=()=>{
-    status('Открытка распознана · Сыры оживают');
-    if(!previewActive){arVideo.currentTime=0;arVideo.play().catch(()=>status('Открытка распознана. Нажмите «Повторить»'))}
-  };
-  anchor.onTargetLost=()=>{arVideo.pause();status('Снова наведите камеру на открытку')};
-  arVideo.onended=()=>status('Анимация завершена · Можно повторить');
-  releaseCameraPreview();
-  status('Включаем дополненную реальность…');
-  await mindar.start();
-  rendering=true;status('Наведите камеру на открытку с сердцем');
-  mindar.renderer.setAnimationLoop(()=>mindar.renderer.render(mindar.scene,mindar.camera));
- }catch(e){
-  report(e);
-  if(cameraStream){status('Камера работает ✓ Ошибка загрузки AR');$('retryCamera').style.display='inline-block'}
-  else{
-    try{await mindar?.stop()}catch(_){}
-    if(cameraPreview){releaseCameraPreview()}
-    $('intro').classList.remove('hidden');$('hud').style.display='none';
+function between(x,a,b){let u=Math.max(0,Math.min(1,(x-a)/(b-a)));return u*u*(3-2*u)}
+function paint(ctx,secs){
+ if(!sheet)return;
+ ctx.clearRect(0,0,W,H);
+ let t=Math.max(0,secs%DURATION);
+ // 16 original real-frame samples crossfade smoothly; no iOS video/autoplay dependency.
+ let f=15*between(t,0,7.6),i0=Math.floor(f),i1=Math.min(15,i0+1),mix=f-i0;
+ const draw=(n,a)=>{if(a<=0)return;ctx.globalAlpha=a;ctx.drawImage(sheet,(n%COLS)*W,Math.floor(n/COLS)*H,W,H,0,0,W,H)};
+ draw(i0,1-mix);draw(i1,mix);ctx.globalAlpha=1;
+ // When Belper cracks, a few solid pale crumbs scatter. Never render liquid from the hard ball.
+ let crack=between(t,2.3,4.2);
+ if(crack>.01){
+  ctx.save();ctx.shadowColor='#120906';ctx.shadowBlur=2;
+  for(let i=0;i<18;i++){
+    let k=(i*37)%19/19,p=Math.min(1,Math.max(0,(t-2.2-k*.7)/3.3));
+    if(p<=0)continue;
+    const x=145+Math.sin(i*2.77)*(11+18*p)+(i%3-1)*2;
+    const y=99+((i*17)%15)/5+19*p*p;
+    ctx.fillStyle=i%3===0?'#dfc5a4':'#f5e6cf';
+    ctx.beginPath();ctx.ellipse(x,y,1.2+(i%3)*.3,.9+(i%4)*.2,i*.3,0,Math.PI*2);ctx.fill();
   }
- }finally{$('start').disabled=false;$('start').textContent='Открыть камеру'}
+  ctx.restore();
+ }
+ // Glossy, thick white-rind cream elongates slowly out of the cut, rather than spraying.
+ let cream=between(t,3.6,7.3);
+ if(cream>.01){
+  ctx.save();ctx.globalAlpha=.79*cream;
+  const cy=266+cream*15;
+  const g=ctx.createLinearGradient(256,265,273,297);
+  g.addColorStop(0,'#fff9dd');g.addColorStop(.45,'#fff0bc');g.addColorStop(1,'#eecb8e');
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(255,264);ctx.bezierCurveTo(260,270,264,276,263,cy);ctx.bezierCurveTo(262,cy+5,274,cy+5,273,cy-1);ctx.bezierCurveTo(273,271,274,268,269,264);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#fff9e6';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(258,270);ctx.quadraticCurveTo(261,276,265,cy-2);ctx.stroke();ctx.restore();
+ }
+ // Fine warm halo around the original gold spiral.
+ ctx.save();ctx.globalAlpha=.12+.07*Math.cos(t*2.2);
+ ctx.strokeStyle='#ffdb83';ctx.shadowColor='#ffc773';ctx.shadowBlur=14;ctx.lineWidth=1.1;
+ ctx.beginPath();ctx.ellipse(223,270,165,29,-.02,0,Math.PI*1.9);ctx.stroke();ctx.restore();
+}
+function previewLoop(){if(!previewActive)return;let s=(performance.now()-previewStarted)/1000;paint(ctxPreview,s);$('previewStatus').textContent='Анимация: '+Math.floor(s%DURATION+0.1)+' / 8 сек · Бельпер и сливочный сыр';requestAnimationFrame(previewLoop)}
+async function showPreview(){try{await loadSheet();previewActive=true;previewStarted=performance.now();$('modal').style.display='flex';requestAnimationFrame(previewLoop)}catch(e){fail(e)}}
+$('demo').onclick=showPreview;$('watch').onclick=showPreview;
+$('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
+$('replay').onclick=()=>{trackingStarted=performance.now();tracked=true;message('Анимация повторяется · Смотрите на сыры')};
+function closePreviewCamera(){if(previewStream){previewStream.getTracks().forEach(t=>t.stop());previewStream=null}if(previewCamera){previewCamera.remove();previewCamera=null}}
+$('start').onclick=async()=>{
+ $('start').disabled=true;$('start').textContent='Запрашиваем камеру…';$('error').textContent='';
+ try{
+  if(!window.isSecureContext)throw new Error('Для камеры требуется HTTPS');
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Камера недоступна в этом браузере');
+  // A user gesture immediately requests the actual camera; no remote asset waits first.
+  previewStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  previewCamera=document.createElement('video');previewCamera.id='livePreview';previewCamera.autoplay=true;previewCamera.muted=true;previewCamera.playsInline=true;previewCamera.srcObject=previewStream;$('ar').appendChild(previewCamera);
+  try{await previewCamera.play()}catch(e){console.warn('Camera preview',e)}
+  $('intro').classList.add('hidden');$('ui').style.display='block';message('Камера работает · Загружаем анимацию…');
+  await loadSheet();
+  const targetResponse=await fetch('./targets.mind');if(!targetResponse.ok)throw new Error('Не найден файл распознавания открытки');
+  const targetUrl=URL.createObjectURL(await targetResponse.blob());
+  message('Камера работает · Запускаем распознавание…');
+  const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
+  mindar=new MindARThree({container:$('ar'),imageTargetSrc:targetUrl,maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+  anchor=mindar.addAnchor(0);
+  paint(ctxAR,0);sceneTexture=new THREE.CanvasTexture(canvasAR);sceneTexture.colorSpace=THREE.SRGBColorSpace;
+  sceneTexture.minFilter=THREE.LinearFilter;sceneTexture.magFilter=THREE.LinearFilter;
+  const mat=new THREE.MeshBasicMaterial({map:sceneTexture,transparent:true,alphaTest:.025,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
+  plane=new THREE.Mesh(new THREE.PlaneGeometry(.95,.95*H/W),mat);
+  plane.position.set(0,.66,.10);anchor.group.add(plane);
+  anchor.onTargetFound=()=>{tracked=true;trackingStarted=performance.now();message('Открытка распознана · Бельпер раскалывается')};
+  anchor.onTargetLost=()=>{tracked=false;message('Снова наведите камеру на открытку')};
+  closePreviewCamera();
+  await mindar.start();
+  message('Наведите камеру на сердце открытки');
+  mindar.renderer.setAnimationLoop(ms=>{
+    if(tracked){let sec=(performance.now()-trackingStarted)/1000;paint(ctxAR,sec);sceneTexture.needsUpdate=true;
+      plane.position.y=.66+.014*Math.sin(sec*.9);
+      if(sec>5)message('Сливочная сердцевина вытекает · '+Math.floor(sec%DURATION)+' / 8 сек');
+      else message('Бельпер раскалывается · '+Math.floor(sec%DURATION)+' / 8 сек');
+    }
+    mindar.renderer.render(mindar.scene,mindar.camera);
+  });
+ }catch(e){fail(e);try{await mindar?.stop()}catch(_){};closePreviewCamera();$('intro').classList.remove('hidden');$('ui').style.display='none'}
+ finally{$('start').disabled=false;$('start').textContent='Открыть камеру'}
 };
 </script></body></html>
