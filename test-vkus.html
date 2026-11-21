@@ -25,21 +25,26 @@ footer{position:absolute;bottom:0;left:0;right:0;text-align:center;padding:20px 
 #preview video{display:block;max-width:min(100%,420px);max-height:72dvh;border-radius:9px;box-shadow:0 0 40px #0008}
 #preview button{margin-top:20px}
 #error{white-space:pre-line;font-size:13px;color:#fff3de;margin-top:16px}
+#diagnostic{max-width:370px;margin:12px auto 0;white-space:pre-line;font-size:13px;color:#ffe7cc;text-shadow:0 1px 6px #000;display:none}
+#retryCamera{display:none}
+#livePreview{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:0}
+#ar canvas{z-index:1}
+
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script></head>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script></head>
 <body>
 <div id="ar"></div><div id="shade"></div>
 <div id="intro"><div class="panel"><div class="small">LABRIE · ТЕСТ ДОПОЛНЕННОЙ РЕАЛЬНОСТИ</div><h1>Путешествие <em>в мир вкуса</em></h1><p>Крупные планы сыров Labrie и возвращение к утверждённой композиции. Наведите телефон на бордовую открытку с сердцем.</p><button id="start">Открыть камеру</button><button id="demo" class="secondary">Посмотреть видео</button><div id="error"></div><p style="font-size:12px;margin-top:17px">Для первой проверки используется облегчённое видео. Основная AR-страница не изменена.</p></div></div>
 <div id="hud"><header><div class="logo">Ла <b>БРИ</b></div><div id="status">Наведите камеру на открытку</div></header>
-<footer><div id="actions"><button id="replay">Повторить</button><button id="watch" class="secondary">Видео без камеры</button><a class="btn" target="_blank" rel="noopener" href="https://labrie.ru/catalog/nabory/">Подарки Labrie</a></div></footer></div>
+<footer><div id="actions"><button id="replay">Повторить</button><button id="retryCamera" class="secondary">Повторить запуск AR</button><button id="watch" class="secondary">Видео без камеры</button><a class="btn" target="_blank" rel="noopener" href="https://labrie.ru/catalog/nabory/">Подарки Labrie</a></div><div id="diagnostic" role="status"></div></footer></div>
 <div id="preview"><video id="previewVideo" controls muted playsinline webkit-playsinline></video><button id="close" type="button">Вернуться</button></div>
 <video id="arVideo" muted playsinline webkit-playsinline preload="auto" style="position:absolute;left:-999px;top:-999px;width:1px;height:1px"></video>
 <script type="module">
 const $=id=>document.getElementById(id);
-let cachedURL, mindar, anchor, rendering=false, previewActive=false;
+let cachedURL, mindar, anchor, rendering=false, previewActive=false, cameraStream=null, cameraPreview=null;
 const arVideo=$('arVideo'), previewVideo=$('previewVideo');
 function status(msg){$('status').textContent=msg}
-function report(err){console.error(err);$('error').textContent='Ошибка запуска: '+(err?.message||String(err))+'\nПопробуйте Chrome или Safari и проверьте доступ к камере.'}
+function report(err){console.error(err);let message=err?.name==='NotAllowedError'?'Доступ к камере запрещён. Разрешите доступ для этого сайта в настройках браузера.':err?.name==='NotFoundError'?'Камера телефона не найдена.':(err?.message||String(err));$('error').textContent='Ошибка запуска: '+message+'\nОткройте ссылку в Safari или Chrome, не во встроенном браузере QR-сканера.';$('diagnostic').textContent=message;$('diagnostic').style.display='block'}
 async function videoURL(){
  if(cachedURL)return cachedURL;
  const r=await fetch('./assets/labrie-vkus.mp4.b64.txt');
@@ -56,31 +61,66 @@ async function showPreview(){
 function closePreview(){previewActive=false;$('preview').style.display='none';previewVideo.pause();if(rendering&&anchor?.group.visible)arVideo.play().catch(()=>{})}
 $('demo').onclick=showPreview;$('watch').onclick=showPreview;$('close').onclick=closePreview;
 $('replay').onclick=()=>{arVideo.pause();arVideo.currentTime=0;arVideo.play().catch(()=>status('Для воспроизведения нажмите «Повторить»'))};
+function releaseCameraPreview(){
+  if(cameraStream){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null}
+  if(cameraPreview){cameraPreview.remove();cameraPreview=null}
+}
+$('retryCamera').onclick=async()=>{
+  releaseCameraPreview();$('intro').classList.remove('hidden');$('hud').style.display='none';$('diagnostic').style.display='none';$('retryCamera').style.display='none';
+  try{await mindar?.stop()}catch(e){}mindar=null;
+};
 $('start').onclick=async()=>{
- $('start').disabled=true;$('start').textContent='Загружаем…';$('error').textContent='';
+ $('start').disabled=true;$('start').textContent='Запрашиваем камеру…';$('error').textContent='';$('diagnostic').style.display='none';$('retryCamera').style.display='none';
  try{
-  if(!window.isSecureContext)throw new Error('Камера требует защищённую HTTPS-ссылку');
-  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Камера недоступна в браузере');
+  if(!window.isSecureContext)throw new Error('Для камеры нужна защищённая HTTPS-ссылка');
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Этот браузер не предоставляет доступ к камере. Попробуйте Safari на iPhone или Chrome на Android.');
+  // ВАЖНО: системный запрос камеры стартует прямо из нажатия, без ожидания загрузки файлов.
+  const cameraRequest=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  cameraStream=await cameraRequest;
+  cameraPreview=document.createElement('video');
+  cameraPreview.id='livePreview';cameraPreview.muted=true;cameraPreview.autoplay=true;cameraPreview.playsInline=true;
+  cameraPreview.setAttribute('playsinline','');
+  cameraPreview.srcObject=cameraStream;$('ar').appendChild(cameraPreview);
+  try{await cameraPreview.play()}catch(e){console.warn('Preview play',e)}
+  $('intro').classList.add('hidden');$('hud').style.display='block';
+  status('Камера работает ✓ Загружаем гастрономическое путешествие…');
+  // После живого изображения с камеры загружаем видео, маркер и AR-библиотеки.
   await videoURL();
-  // Подготавливаем видео по нажатию пользователя для воспроизведения на мобильных устройствах.
   arVideo.muted=true;try{await arVideo.play();arVideo.pause();arVideo.currentTime=0}catch(e){console.debug('Video unlock',e)}
-  const marker=await fetch('./targets.mind');
-  if(!marker.ok)throw new Error('Не найден targets.mind (HTTP '+marker.status+')');
+  status('Камера работает ✓ Загружаем распознавание открытки…');
+  const marker=await fetch('./targets.mind',{cache:'no-store'});
+  if(!marker.ok)throw new Error('Файл распознавания открытки не найден (HTTP '+marker.status+')');
   const markerURL=URL.createObjectURL(await marker.blob());
+  status('Камера работает ✓ Подключаем AR…');
   const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
   mindar=new MindARThree({container:$('ar'),imageTargetSrc:markerURL,maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
   anchor=mindar.addAnchor(0);
-  const texture=new THREE.VideoTexture(arVideo);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;
+  const texture=new THREE.VideoTexture(arVideo);
+  texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;
   const material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(.83,.83*800/640),material);
+  // Кадр видео адаптируем к фактическому соотношению сторон.
+  const aspect=arVideo.videoWidth&&arVideo.videoHeight?arVideo.videoWidth/arVideo.videoHeight:1;
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(.83,.83/aspect),material);
   plane.position.set(0,.10,.04);anchor.group.add(plane);
-  anchor.onTargetFound=()=>{status('Открытка распознана · Путешествие начинается');if(!previewActive){arVideo.currentTime=0;arVideo.play().catch(()=>status('Нажмите «Повторить»'))}};
+  anchor.onTargetFound=()=>{
+    status('Открытка распознана · Путешествие начинается');
+    if(!previewActive){arVideo.currentTime=0;arVideo.play().catch(()=>status('Открытка распознана. Нажмите «Повторить»'))}
+  };
   anchor.onTargetLost=()=>{arVideo.pause();status('Снова наведите камеру на открытку')};
   arVideo.onended=()=>status('Путешествие завершено · Можно повторить');
+  releaseCameraPreview();
+  status('Включаем дополненную реальность…');
   await mindar.start();
-  rendering=true;$('intro').classList.add('hidden');$('hud').style.display='block';
+  rendering=true;status('Наведите камеру на открытку с сердцем');
   mindar.renderer.setAnimationLoop(()=>mindar.renderer.render(mindar.scene,mindar.camera));
- }catch(e){report(e);try{await mindar?.stop()}catch(_){}}
- finally{$('start').disabled=false;$('start').textContent='Открыть камеру'}
+ }catch(e){
+  report(e);
+  if(cameraStream){status('Камера работает ✓ Ошибка загрузки AR');$('retryCamera').style.display='inline-block'}
+  else{
+    try{await mindar?.stop()}catch(_){}
+    if(cameraPreview){releaseCameraPreview()}
+    $('intro').classList.remove('hidden');$('hud').style.display='none';
+  }
+ }finally{$('start').disabled=false;$('start').textContent='Открыть камеру'}
 };
 </script></body></html>
