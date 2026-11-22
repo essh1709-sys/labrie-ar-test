@@ -42,13 +42,16 @@
 /* После запуска AR экран остаётся чистым — без кнопок и ссылок. */
 #ui footer,#actions{display:none!important;}
 @media (max-height:620px){#intro .brand-name{margin-bottom:15px}#intro h1{margin:8px 0 10px}#intro .ornament{margin:15px auto}#intro p.intro-copy{margin-bottom:18px}}
+
+/* Подлинный логотип из фирменных материалов, без имитации шрифтом. */
+#intro img.brand-logo{display:block;width:min(254px,75vw);height:auto;margin:0 auto 28px;object-fit:contain;}
+@media (max-height:650px){#intro img.brand-logo{width:min(215px,66vw);margin-bottom:14px;}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 </head><body>
 <div id="ar"></div><div id="shade"></div>
 <div id="intro"><div class="panel">
-<div class="brand-name" aria-label="Ла БРИ">Ла <b>БРИ</b></div>
-<div class="eyebrow">РЕМЕСЛЕННАЯ СЫРОВАРНЯ · LABRIE</div>
+<img class="brand-logo" src="./assets/labrie-logo.svg" alt="Ла БРИ — ремесленная сыроварня" width="254" height="109" decoding="async">
 <h1>От сердца к сердцу <em>через сыр</em></h1>
 <div class="ornament" aria-hidden="true"></div>
 <p class="intro-copy">Есть вкусы, которыми хочется делиться. Мы приготовили для вас маленькое гастрономическое чудо — оно оживёт прямо на этой открытке.</p>
