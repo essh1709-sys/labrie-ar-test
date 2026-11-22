@@ -51,6 +51,7 @@ function paint(ctx,secs){
  const f=15*between(t,0,7.6),i0=Math.floor(f),i1=Math.min(15,i0+1),mix=f-i0;
  const localMotion=(cx,cy,rx,ry)=>{
    ctx.save();ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.clip();
+   ctx.clearRect(0,0,W,H); // заменяем локальный участок, не удваиваем его прозрачность
    draw(i0,1-mix);draw(i1,mix);
    ctx.restore();ctx.globalAlpha=1;
  };
