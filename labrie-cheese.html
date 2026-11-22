@@ -1,5 +1,5 @@
 <!doctype html><html lang="ru"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4b1d2c">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#650d02">
 <title>Ла БРИ — Живое сырное сердце</title>
 <style>
 :root{--burgundy:#4b1d2c;--gold:#edc994}*{box-sizing:border-box}html,body{margin:0;height:100%;background:#1b0d14;color:#fff6ea;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
@@ -9,11 +9,53 @@
 #ui{display:none;position:fixed;inset:0;pointer-events:none}header{position:absolute;top:0;left:0;right:0;text-align:center;padding:calc(env(safe-area-inset-top) + 15px) 10px}.brand{font:italic 27px Georgia,serif}.brand b{font:900 22px Arial,sans-serif}#status{font-size:12px;margin-top:10px;text-shadow:0 2px 6px #10050b}footer{position:absolute;bottom:0;width:100%;text-align:center;padding:15px 12px calc(env(safe-area-inset-bottom) + 18px)}#actions{pointer-events:auto;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}#actions button,#actions a{font-size:13px;min-height:42px;padding:11px 14px}
 #modal{display:none;position:fixed;z-index:12;inset:0;background:radial-gradient(circle at center,#512339,#190d17);align-items:center;justify-content:center;flex-direction:column;gap:15px;padding:17px;text-align:center}#previewStage{background:linear-gradient(#4e2639,#150b14);padding:16px;border-radius:12px;max-width:100%;box-shadow:0 12px 38px #0006}#preview{display:block;width:min(90vw,460px);height:auto;max-height:58dvh;object-fit:contain}
 #livePreview{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}#ar canvas{z-index:1}
+
+/* Стартовый экран в фирменных цветах labrie.ru */
+#intro{
+ background:#f2efe8;
+ color:#650d02;
+ padding:32px 25px;
+}
+#intro::before{
+ content:"";position:absolute;inset:16px;border:1px solid rgba(101,13,2,.19);
+ pointer-events:none;
+}
+#intro .panel{position:relative;z-index:1;max-width:390px;}
+#intro .eyebrow{color:#650d02;font-size:11px;font-weight:500;letter-spacing:.14em;}
+#intro .brand-name{
+ font:italic 30px/1.15 Georgia,"Times New Roman",serif;
+ letter-spacing:-.02em;color:#650d02;margin-bottom:32px;
+}
+#intro .brand-name b{font:800 25px/1 Arial,sans-serif;letter-spacing:-.035em;}
+#intro h1{color:#650d02;font:normal clamp(34px,8vw,44px)/1.12 Georgia,"Times New Roman",serif;margin:14px 0 20px;}
+#intro h1 em{display:block;font:italic .82em/1.25 Georgia,"Times New Roman",serif;color:#650d02;padding-top:4px;}
+#intro .ornament{height:1px;width:55px;background:#650d02;margin:23px auto 25px;opacity:.55;}
+#intro p.intro-copy{font-size:16px;line-height:1.62;color:#4b332e;margin:0 auto 28px;max-width:345px;}
+#intro button#start{display:block;margin:0 auto;min-width:224px;max-width:100%;
+ background:#650d02;color:#f2efe8;border:1px solid #650d02;border-radius:32px;
+ font:500 16px/1.15 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ padding:16px 27px;min-height:52px;box-shadow:none;transition:background-color .2s ease;
+}
+#intro button#start:focus-visible{outline:2px solid #650d02;outline-offset:4px;}
+#intro .camera-hint{font-size:12px;line-height:1.5;color:#806c65;margin:19px auto 0;max-width:300px;}
+#intro #error{color:#650d02;margin-top:15px;}
+/* После запуска AR экран остаётся чистым — без кнопок и ссылок. */
+#ui footer,#actions{display:none!important;}
+@media (max-height:620px){#intro .brand-name{margin-bottom:15px}#intro h1{margin:8px 0 10px}#intro .ornament{margin:15px auto}#intro p.intro-copy{margin-bottom:18px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 </head><body>
 <div id="ar"></div><div id="shade"></div>
-<div id="intro"><div class="panel"><div class="eyebrow">AR · РЕМЕСЛЕННАЯ СЫРОВАРНЯ ЛА БРИ</div><h1>От сердца к сердцу <em>через сыр</em></h1><p>Как в первой AR-анимации с домиком: сначала огоньки, затем сырная композиция вырастает прямо из сердца открытки. Твёрдый Бельпер только раскалывается; сливочная сердцевина — исключительно у сыра с белой плесенью.</p><button id="start">Открыть камеру</button><button id="demo" class="alt">Посмотреть анимацию</button><p id="error"></p></div></div>
+<div id="intro"><div class="panel">
+<div class="brand-name" aria-label="Ла БРИ">Ла <b>БРИ</b></div>
+<div class="eyebrow">РЕМЕСЛЕННАЯ СЫРОВАРНЯ · LABRIE</div>
+<h1>От сердца к сердцу <em>через сыр</em></h1>
+<div class="ornament" aria-hidden="true"></div>
+<p class="intro-copy">Есть вкусы, которыми хочется делиться. Мы приготовили для вас маленькое гастрономическое чудо — оно оживёт прямо на этой открытке.</p>
+<button id="start" type="button">Открыть камеру</button>
+<p class="camera-hint">Разрешите доступ к камере и наведите телефон на открытку.</p>
+<p id="error" role="alert"></p>
+</div></div>
 <div id="ui"><header><div class="brand">Ла <b>БРИ</b></div><div id="status">Наведите камеру на бордовую открытку</div></header><footer><div id="actions"><button id="replay">Повторить анимацию</button><button id="watch" class="alt">Без камеры</button><a class="action" href="https://labrie.ru/catalog/nabory/" target="_blank" rel="noopener">Подарки Labrie</a></div></footer></div>
 <div id="modal"><div class="eyebrow">КАК ОЖИВАЮТ СЫРЫ</div><div id="previewStage"><canvas id="preview" width="460" height="332"></canvas></div><div id="previewStatus">Раскол Бельпера и сливочная сердцевина</div><button id="close">Вернуться к открытке</button></div>
 <script type="module">
@@ -124,7 +166,7 @@ function previewLoop(){
  requestAnimationFrame(previewLoop);
 }
 async function showPreview(){try{await loadSheet();previewActive=true;previewStarted=performance.now();$('modal').style.display='flex';requestAnimationFrame(previewLoop)}catch(e){fail(e)}}
-$('demo').onclick=showPreview;$('watch').onclick=showPreview;
+$('watch').onclick=showPreview;
 $('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
 $('replay').onclick=()=>{if(!tracked){message('Наведите камеру на сердце открытки');return}trackingStarted=performance.now();message('Волшебство начинается · Огоньки на сердце')};
 // Переносим тот же световой эффект, что использовался в первой рабочей AR-сцене с домиком.
