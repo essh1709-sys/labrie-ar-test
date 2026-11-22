@@ -169,7 +169,7 @@ $('start').onclick=async()=>{
   const targetUrl=URL.createObjectURL(await targetResponse.blob());
   message('Камера работает · Запускаем распознавание…');
   const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
-  mindar=new MindARThree({container:$('ar'),imageTargetSrc:targetUrl,maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+  mindar=new MindARThree({container:$('ar'),imageTargetSrc:targetUrl,maxTrack:1,filterMinCF:0.001,filterBeta:0.05,warmupTolerance:5,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
   anchor=mindar.addAnchor(0);
   paint(ctxAR,0);sceneTexture=new THREE.CanvasTexture(canvasAR);sceneTexture.colorSpace=THREE.SRGBColorSpace;
   sceneTexture.minFilter=THREE.LinearFilter;sceneTexture.magFilter=THREE.LinearFilter;
@@ -188,8 +188,8 @@ $('start').onclick=async()=>{
       const sec=(performance.now()-trackingStarted)/1000;
       const reveal=animateHouseHeartMagic(sec);
       // Пока горят огоньки, изображение скрыто. Затем растёт прямо из центра сердца.
-      plane.scale.setScalar(Math.max(.001,reveal*(1+.02*Math.sin(sec*2.1))));
-      plane.position.set(0,.025*Math.sin(sec*1.6)*reveal,.12);
+      plane.scale.setScalar(Math.max(.001,reveal));
+      plane.position.set(0,0,.12);
       mat.opacity=Math.min(1,reveal*1.5);
       // Сначала полное появление, затем раскол твёрдого Бельпера с сухими крошками,
       // и только после этого тягучая сердцевина СЫРА С БЕЛОЙ ПЛЕСЕНЬЮ.
