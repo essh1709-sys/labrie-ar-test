@@ -19,7 +19,7 @@
 <script type="module">
 const $=id=>document.getElementById(id);
 const W=460,H=332,COLS=4,FRAMES=16,CHEESE_DURATION=8.4,LIGHT_DURATION=3,APPEAR_DURATION=5.2,DURATION=LIGHT_DURATION+APPEAR_DURATION+CHEESE_DURATION;
-let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,heartFx=null,dust=[],tracked=false,trackingStarted=0;
+let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,heartFx=null,dust=[],tracked=false,trackingStarted=0,pausedAt=0;
 let previewActive=false,previewStarted=0,previewStream=null,previewCamera=null,ctxAR=null;
 const canvasAR=document.createElement('canvas');canvasAR.width=W;canvasAR.height=H;ctxAR=canvasAR.getContext('2d',{alpha:true});
 const previewCanvas=$('preview'),ctxPreview=previewCanvas.getContext('2d',{alpha:true});
@@ -42,7 +42,7 @@ function between(x,a,b){let u=Math.max(0,Math.min(1,(x-a)/(b-a)));return u*u*(3-
 function paint(ctx,secs){
  if(!sheet)return;
  ctx.clearRect(0,0,W,H);
- let t=Math.max(0,secs%CHEESE_DURATION);
+ let t=Math.max(0,Math.min(secs,CHEESE_DURATION-0.001)); // Сыр доходит до финального кадра и остаётся там, без зацикленного мигания.
  // Основа всегда одна и та же: фон и рисунок открытки не могут мигать при смене кадров.
  const draw=(n,a)=>{if(a<=0)return;ctx.globalAlpha=a;ctx.drawImage(sheet,(n%COLS)*W,Math.floor(n/COLS)*H,W,H,0,0,W,H)};
  draw(0,1);ctx.globalAlpha=1;
@@ -52,12 +52,14 @@ function paint(ctx,secs){
  const localMotion=(cx,cy,rx,ry)=>{
    ctx.save();ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.clip();
    ctx.clearRect(0,0,W,H); // заменяем локальный участок, не удваиваем его прозрачность
-   draw(i0,1-mix);draw(i1,mix);
+   // Первый кадр всегда полностью непрозрачен, следующий плавно добавляется сверху.
+   // Старый приём (1-mix)+mix делал участок на миг прозрачным и заставлял сердце мигать.
+   draw(i0,1);draw(i1,mix);
    ctx.restore();ctx.globalAlpha=1;
  };
  if(t>0){
    localMotion(139,83,88,68); // шарик Бельпера (верхняя левая подставка)
-   localMotion(269,239,101,62); // кремовая сердцевина справа внизу
+   localMotion(269,230,78,43); // только тело мягкого сыра, не затрагиваем область рисунка сердца
  }
  // When Belper cracks, a few solid pale crumbs scatter. Never render liquid from the hard ball.
  let crack=between(t,2.3,4.2);
@@ -127,14 +129,14 @@ $('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
 $('replay').onclick=()=>{if(!tracked){message('Наведите камеру на сердце открытки');return}trackingStarted=performance.now();message('Волшебство начинается · Огоньки на сердце')};
 // Переносим тот же световой эффект, что использовался в первой рабочей AR-сцене с домиком.
 function makeHouseHeartMagic(THREE){
- heartFx=new THREE.Group();heartFx.position.set(0,.30,.16);anchor.group.add(heartFx);
+ heartFx=new THREE.Group();heartFx.position.set(0,-.01,.16);anchor.group.add(heartFx); // точка появления снова в центре сердца, как у первого домика
  // Рисунок сердца на настоящей открытке НЕ подсвечиваем и не перерисовываем.
- // Остаются только отдельные золотые огоньки над его центром.
+ // Огоньки появляются именно ИЗ ЦЕНТРА сердца и гаснут по мере роста композиции.
  for(let i=0;i<36;i++){
   const geom=new THREE.CircleGeometry(.004+(i%5)*.0016,8);
   const mat=new THREE.MeshBasicMaterial({color:i%4?0xffd89b:0xfff4d0,transparent:true,opacity:0,depthTest:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
   const p=new THREE.Mesh(geom,mat);
-  p.userData={phase:i*2.39996,radius:.08+((i*19)%15)*.008,velocity:.5+(i%8)*.15};
+  p.userData={phase:i*2.39996,radius:.11+((i*19)%23)*.008,velocity:.5+(i%8)*.15};
   heartFx.add(p);dust.push(p);
  }
 }
@@ -144,7 +146,7 @@ function animateHouseHeartMagic(t){
  const fade=1-reveal;
  dust.forEach((p,i)=>{
   const d=p.userData,theta=t*d.velocity+d.phase;
-  p.position.set(Math.cos(theta)*d.radius,Math.sin(theta)*d.radius*.38,.07+.02*Math.sin(theta*2));
+  p.position.set(Math.cos(theta)*d.radius,Math.sin(theta)*d.radius*.78,.07+.02*Math.sin(theta*2));
   p.material.opacity=(.25+.6*Math.abs(Math.sin(theta*1.3)))*phase*fade;
   p.scale.setScalar(.7+Math.abs(Math.sin(theta))*1.2);
  });
@@ -175,8 +177,18 @@ $('start').onclick=async()=>{
   // Вдвое больше прежнего размера, центр — непосредственно над сердцем открытки.
   plane.position.set(0,0,.12);plane.scale.setScalar(.001);anchor.group.add(plane);
   makeHouseHeartMagic(THREE);
-  anchor.onTargetFound=()=>{tracked=true;trackingStarted=performance.now();message('Открытка распознана · Сначала огоньки над сердцем')};
-  anchor.onTargetLost=()=>{tracked=false;message('Снова наведите камеру на открытку')};
+  anchor.onTargetFound=()=>{
+    const now=performance.now();
+    // Краткое исчезновение маркера не перезапускает анимацию и не заставляет сердце мигать.
+    if(!trackingStarted){trackingStarted=now}
+    else if(pausedAt){trackingStarted+=now-pausedAt}
+    pausedAt=0;tracked=true;
+    message('Открытка распознана · Сыры оживают из сердца');
+  };
+  anchor.onTargetLost=()=>{
+    if(tracked){pausedAt=performance.now()}
+    tracked=false;message('Снова наведите камеру на открытку');
+  };
   closePreviewCamera();
   await mindar.start();
   message('Наведите камеру на сердце открытки');
@@ -191,12 +203,12 @@ $('start').onclick=async()=>{
       // Сначала полное появление, затем раскол твёрдого Бельпера с сухими крошками,
       // и только после этого тягучая сердцевина СЫРА С БЕЛОЙ ПЛЕСЕНЬЮ.
       const cheeseSec=Math.max(0,sec-LIGHT_DURATION-APPEAR_DURATION);
-      paint(ctxAR,cheeseSec);sceneTexture.needsUpdate=true;
-      const stage=sec%DURATION;
+      if(cheeseSec<=CHEESE_DURATION+0.15){paint(ctxAR,cheeseSec);sceneTexture.needsUpdate=true;} // После окончания держим тот же финальный кадр
+      const stage=Math.min(sec,DURATION);
       if(stage<LIGHT_DURATION)message('Волшебство начинается · Золотые огоньки');
       else if(stage<LIGHT_DURATION+APPEAR_DURATION)message('Сыры появляются и вырастают из сердца');
       else if(stage<LIGHT_DURATION+APPEAR_DURATION+4.6)message('Бельпер сухо раскалывается — без вытекания');
-      else message('Сливочная сердцевина сыра с белой плесенью');
+      else message('Сыры раскрылись · Композиция неподвижна');
     }else{
       plane.scale.setScalar(.001);
       dust.forEach(p=>p.material.opacity=0)
