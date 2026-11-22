@@ -40,7 +40,21 @@
 #intro .camera-hint{font-size:12px;line-height:1.5;color:#806c65;margin:19px auto 0;max-width:300px;}
 #intro #error{color:#650d02;margin-top:15px;}
 /* После запуска AR экран остаётся чистым — без кнопок и ссылок. */
-#ui footer,#actions{display:none!important;}
+/* Камера: оригинальный логотип, никаких надписей об этапах анимации, только три кнопки. */
+#ui{z-index:4}
+#ui header{padding:calc(env(safe-area-inset-top) + 12px) 12px 0;pointer-events:none}
+#cameraLogo svg{display:block;margin:auto;width:min(190px,54vw);height:auto;max-height:86px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
+#ui #status{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+#ui footer{display:block!important;bottom:0;padding:15px 13px calc(env(safe-area-inset-bottom) + 18px);pointer-events:none}
+#ui #actions{display:flex!important;flex-direction:column;gap:8px;width:min(340px,100%);margin:auto;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .4s ease,transform .4s ease}
+#ui #actions.show{opacity:1;transform:translateY(0);pointer-events:auto}
+#ui #actions button{min-height:44px;width:100%;margin:0;border-radius:28px;font-size:14px;font-weight:600;padding:11px 14px;background:#f2efe8;color:#650d02;border:1px solid rgba(101,13,2,.3);box-shadow:0 2px 12px rgba(0,0,0,.25)}
+#ui #gift{background:#650d02!important;border-color:#f2efe8!important;color:#fff9f1!important}
+#ui #replay{background:rgba(26,11,15,.74)!important;color:#f2efe8!important;border:1px solid rgba(242,239,232,.7)!important;backdrop-filter:blur(7px)}
+#ui #actionNotice{display:none;margin:0 auto 12px;padding:9px 15px;width:min(340px,100%);font-size:13px;line-height:1.35;border-radius:14px;background:rgba(39,11,20,.92);color:#f2efe8;text-align:center;pointer-events:none}
+#ui #actionNotice.show{display:block}
+@media (max-height:620px){#cameraLogo svg{width:min(160px,43vw)}#ui footer{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}#ui #actions{gap:5px}#ui #actions button{min-height:40px}}
+
 @media (max-height:620px){#intro .brand-name{margin-bottom:15px}#intro h1{margin:8px 0 10px}#intro .ornament{margin:15px auto}#intro p.intro-copy{margin-bottom:18px}}
 
 /* Подлинный логотип из фирменных материалов, без имитации шрифтом. */
@@ -59,10 +73,26 @@
 <p class="camera-hint">Разрешите доступ к камере и наведите телефон на открытку.</p>
 <p id="error" role="alert"></p>
 </div></div>
-<div id="ui"><header><div class="brand">Ла <b>БРИ</b></div><div id="status">Наведите камеру на бордовую открытку</div></header><footer><div id="actions"><button id="replay">Повторить анимацию</button><button id="watch" class="alt">Без камеры</button><a class="action" href="https://labrie.ru/catalog/nabory/" target="_blank" rel="noopener">Подарки Labrie</a></div></footer></div>
+<div id="ui">
+<header><div id="cameraLogo" aria-label="Ла БРИ — ремесленная сыроварня"></div><div id="status" aria-live="off">Наведите камеру на открытку</div></header>
+<footer>
+<div id="actionNotice" role="status" aria-live="polite"></div>
+<div id="actions">
+<button id="gift" type="button">Получить подарок</button>
+<button id="about" type="button">Узнать о нас больше</button>
+<button id="replay" type="button">Повторить волшебство</button>
+</div>
+</footer></div>
 <div id="modal"><div class="eyebrow">КАК ОЖИВАЮТ СЫРЫ</div><div id="previewStage"><canvas id="preview" width="460" height="332"></canvas></div><div id="previewStatus">Раскол Бельпера и сливочная сердцевина</div><button id="close">Вернуться к открытке</button></div>
 <script type="module">
 const $=id=>document.getElementById(id);
+// Для экрана камеры используем копию подлинного SVG с приветственной страницы.
+// Сохраняем контуры оригинала, меняем только цвет для контраста с камерой.
+const logoInCamera=document.querySelector('#intro svg.brand-logo').cloneNode(true);
+logoInCamera.classList.remove('brand-logo');
+logoInCamera.classList.add('camera-logo');
+logoInCamera.querySelectorAll('[fill]').forEach(p=>{if(p.getAttribute('fill')!=='none')p.setAttribute('fill','#f2efe8')});
+$('cameraLogo').appendChild(logoInCamera);
 const W=460,H=332,COLS=4,FRAMES=16,CHEESE_DURATION=8.4,LIGHT_DURATION=3,APPEAR_DURATION=5.2,DURATION=LIGHT_DURATION+APPEAR_DURATION+CHEESE_DURATION;
 let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,heartFx=null,dust=[],tracked=false,trackingStarted=0,pausedAt=0;
 let previewActive=false,previewStarted=0,previewStream=null,previewCamera=null,ctxAR=null;
@@ -169,9 +199,19 @@ function previewLoop(){
  requestAnimationFrame(previewLoop);
 }
 async function showPreview(){try{await loadSheet();previewActive=true;previewStarted=performance.now();$('modal').style.display='flex';requestAnimationFrame(previewLoop)}catch(e){fail(e)}}
-$('watch').onclick=showPreview;
+// Оставляем просмотр без камеры технически доступным для отладки, но не показываем его кнопку.
 $('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
-$('replay').onclick=()=>{if(!tracked){message('Наведите камеру на сердце открытки');return}trackingStarted=performance.now();message('Волшебство начинается · Огоньки на сердце')};
+function actionHint(text){$('actionNotice').textContent=text;$('actionNotice').classList.add('show')}
+$('gift').onclick=()=>actionHint('Подарок Labrie — скоро здесь.');
+$('about').onclick=()=>actionHint('Знакомство с Labrie — скоро здесь.');
+$('replay').onclick=()=>{
+  if(!tracked){actionHint('Наведите камеру на сердце открытки, чтобы повторить волшебство.');return}
+  $('actionNotice').classList.remove('show');
+  $('actions').classList.remove('show');
+  trackingStarted=performance.now();
+  pausedAt=0;
+  message('Волшебство начинается · Огоньки на сердце');
+};
 // Переносим тот же световой эффект, что использовался в первой рабочей AR-сцене с домиком.
 function makeHouseHeartMagic(THREE){
  heartFx=new THREE.Group();heartFx.position.set(0,-.01,.16);anchor.group.add(heartFx); // точка появления снова в центре сердца, как у первого домика
@@ -249,6 +289,7 @@ $('start').onclick=async()=>{
       // и только после этого тягучая сердцевина СЫРА С БЕЛОЙ ПЛЕСЕНЬЮ.
       const cheeseSec=Math.max(0,sec-LIGHT_DURATION-APPEAR_DURATION);
       if(cheeseSec<=CHEESE_DURATION+0.15){paint(ctxAR,cheeseSec);sceneTexture.needsUpdate=true;} // После окончания держим тот же финальный кадр
+      if(sec>=LIGHT_DURATION+APPEAR_DURATION+1.2){$('actions').classList.add('show')}
       const stage=Math.min(sec,DURATION);
       if(stage<LIGHT_DURATION)message('Волшебство начинается · Золотые огоньки');
       else if(stage<LIGHT_DURATION+APPEAR_DURATION)message('Сыры появляются и вырастают из сердца');
