@@ -210,8 +210,8 @@ async function showPreview(){try{await loadSheet();previewActive=true;previewSta
 $('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
 function setScanHint(show){$('scanHint').classList.toggle('show',!!show)}
 function actionHint(text){$('actionNotice').textContent=text;$('actionNotice').classList.add('show')}
-$('gift').onclick=()=>actionHint('Подарок Labrie — скоро здесь.');
-$('about').onclick=()=>actionHint('Знакомство с Labrie — скоро здесь.');
+$('gift').onclick=()=>{window.location.assign('https://labrie.ru/club')};
+$('about').onclick=()=>{window.location.assign('https://labrie.ru/resources')};
 $('replay').onclick=()=>{
   if(!tracked){setScanHint(true);actionHint('Наведите камеру на сердце открытки, чтобы повторить волшебство.');return}
   $('actionNotice').classList.remove('show');
