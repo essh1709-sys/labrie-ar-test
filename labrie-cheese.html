@@ -43,10 +43,21 @@ function paint(ctx,secs){
  if(!sheet)return;
  ctx.clearRect(0,0,W,H);
  let t=Math.max(0,secs%CHEESE_DURATION);
- // 16 original real-frame samples crossfade smoothly; no iOS video/autoplay dependency.
- let f=15*between(t,0,7.6),i0=Math.floor(f),i1=Math.min(15,i0+1),mix=f-i0;
+ // Основа всегда одна и та же: фон и рисунок открытки не могут мигать при смене кадров.
  const draw=(n,a)=>{if(a<=0)return;ctx.globalAlpha=a;ctx.drawImage(sheet,(n%COLS)*W,Math.floor(n/COLS)*H,W,H,0,0,W,H)};
- draw(i0,1-mix);draw(i1,mix);ctx.globalAlpha=1;
+ draw(0,1);ctx.globalAlpha=1;
+ // Меняем ТОЛЬКО области двух сыров — раскалывающегося Бельпера и белой плесени.
+ // Остальной натюрморт, золотая спираль и фон остаются неизменными.
+ const f=15*between(t,0,7.6),i0=Math.floor(f),i1=Math.min(15,i0+1),mix=f-i0;
+ const localMotion=(cx,cy,rx,ry)=>{
+   ctx.save();ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.clip();
+   draw(i0,1-mix);draw(i1,mix);
+   ctx.restore();ctx.globalAlpha=1;
+ };
+ if(t>0){
+   localMotion(139,83,88,68); // шарик Бельпера (верхняя левая подставка)
+   localMotion(269,239,101,62); // кремовая сердцевина справа внизу
+ }
  // When Belper cracks, a few solid pale crumbs scatter. Never render liquid from the hard ball.
  let crack=between(t,2.3,4.2);
  if(crack>.01){
@@ -71,10 +82,7 @@ function paint(ctx,secs){
   ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(255,264);ctx.bezierCurveTo(260,270,264,276,263,cy);ctx.bezierCurveTo(262,cy+5,274,cy+5,273,cy-1);ctx.bezierCurveTo(273,271,274,268,269,264);ctx.closePath();ctx.fill();
   ctx.strokeStyle='#fff9e6';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(258,270);ctx.quadraticCurveTo(261,276,265,cy-2);ctx.stroke();ctx.restore();
  }
- // Fine warm halo around the original gold spiral.
- ctx.save();ctx.globalAlpha=.12+.07*Math.cos(t*2.2);
- ctx.strokeStyle='#ffdb83';ctx.shadowColor='#ffc773';ctx.shadowBlur=14;ctx.lineWidth=1.1;
- ctx.beginPath();ctx.ellipse(223,270,165,29,-.02,0,Math.PI*1.9);ctx.stroke();ctx.restore();
+ // Не накладываем мерцающую световую полосу на рисунок сердца на открытке.
 }
 // Первоначальный эффект домика: огоньки на сердце 3 сек., затем рост композиции за 5,2 сек.
 const stageCanvas=document.createElement('canvas');stageCanvas.width=W;stageCanvas.height=H;
@@ -85,7 +93,7 @@ function paintStory(ctx,elapsed){
  if(reveal>0){
   paint(stageCtx,Math.max(0,t-LIGHT_DURATION-APPEAR_DURATION));
   ctx.save();ctx.translate(W/2,H/2);
-  const scale=Math.max(.001,reveal*(1+.02*Math.sin(t*2.1)));
+  const scale=Math.max(.001,reveal);
   ctx.scale(scale,scale);ctx.globalAlpha=Math.min(1,reveal*1.5);
   ctx.drawImage(stageCanvas,-W/2,-H/2);ctx.restore();
  }
@@ -118,24 +126,24 @@ $('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
 $('replay').onclick=()=>{if(!tracked){message('Наведите камеру на сердце открытки');return}trackingStarted=performance.now();message('Волшебство начинается · Огоньки на сердце')};
 // Переносим тот же световой эффект, что использовался в первой рабочей AR-сцене с домиком.
 function makeHouseHeartMagic(THREE){
- heartFx=new THREE.Group();heartFx.position.set(0,-.01,.16);anchor.group.add(heartFx);
+ heartFx=new THREE.Group();heartFx.position.set(0,.30,.16);anchor.group.add(heartFx);
  // Рисунок сердца на настоящей открытке НЕ подсвечиваем и не перерисовываем.
  // Остаются только отдельные золотые огоньки над его центром.
  for(let i=0;i<36;i++){
   const geom=new THREE.CircleGeometry(.004+(i%5)*.0016,8);
   const mat=new THREE.MeshBasicMaterial({color:i%4?0xffd89b:0xfff4d0,transparent:true,opacity:0,depthTest:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
   const p=new THREE.Mesh(geom,mat);
-  p.userData={phase:i*2.39996,radius:.11+((i*19)%32)*.01,velocity:.5+(i%8)*.15};
+  p.userData={phase:i*2.39996,radius:.08+((i*19)%15)*.008,velocity:.5+(i%8)*.15};
   heartFx.add(p);dust.push(p);
  }
 }
 function animateHouseHeartMagic(t){
  const reveal=between(t,LIGHT_DURATION,LIGHT_DURATION+APPEAR_DURATION);
  const phase=Math.min(1,t/LIGHT_DURATION);
- const fade=1-.95*reveal;
+ const fade=1-reveal;
  dust.forEach((p,i)=>{
   const d=p.userData,theta=t*d.velocity+d.phase;
-  p.position.set(Math.cos(theta)*d.radius,Math.sin(theta)*d.radius*.78,.07+.02*Math.sin(theta*2));
+  p.position.set(Math.cos(theta)*d.radius,Math.sin(theta)*d.radius*.38,.07+.02*Math.sin(theta*2));
   p.material.opacity=(.25+.6*Math.abs(Math.sin(theta*1.3)))*phase*fade;
   p.scale.setScalar(.7+Math.abs(Math.sin(theta))*1.2);
  });
