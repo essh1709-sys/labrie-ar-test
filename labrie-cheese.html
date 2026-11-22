@@ -19,7 +19,7 @@
 <script type="module">
 const $=id=>document.getElementById(id);
 const W=460,H=332,COLS=4,FRAMES=16,CHEESE_DURATION=8.4,LIGHT_DURATION=3,APPEAR_DURATION=5.2,DURATION=LIGHT_DURATION+APPEAR_DURATION+CHEESE_DURATION;
-let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,heartFx=null,heartLine=null,heartGlow=null,dust=[],tracked=false,trackingStarted=0;
+let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,heartFx=null,dust=[],tracked=false,trackingStarted=0;
 let previewActive=false,previewStarted=0,previewStream=null,previewCamera=null,ctxAR=null;
 const canvasAR=document.createElement('canvas');canvasAR.width=W;canvasAR.height=H;ctxAR=canvasAR.getContext('2d',{alpha:true});
 const previewCanvas=$('preview'),ctxPreview=previewCanvas.getContext('2d',{alpha:true});
@@ -109,7 +109,7 @@ function paintStory(ctx,elapsed){
 function previewLoop(){
  if(!previewActive)return;
  let t=(performance.now()-previewStarted)/1000;paintStory(ctxPreview,t);
- $('previewStatus').textContent=t%DURATION<LIGHT_DURATION?'Сердце светится · огоньки':t%DURATION<LIGHT_DURATION+APPEAR_DURATION?'Композиция появляется и вырастает':t%DURATION<LIGHT_DURATION+APPEAR_DURATION+3?'Бельпер сухо раскалывается':'Течёт только сердцевина сыра с белой плесенью';
+ $('previewStatus').textContent=t%DURATION<LIGHT_DURATION?'Золотые огоньки над сердцем':t%DURATION<LIGHT_DURATION+APPEAR_DURATION?'Композиция появляется и вырастает':t%DURATION<LIGHT_DURATION+APPEAR_DURATION+3?'Бельпер сухо раскалывается':'Течёт только сердцевина сыра с белой плесенью';
  requestAnimationFrame(previewLoop);
 }
 async function showPreview(){try{await loadSheet();previewActive=true;previewStarted=performance.now();$('modal').style.display='flex';requestAnimationFrame(previewLoop)}catch(e){fail(e)}}
@@ -119,18 +119,8 @@ $('replay').onclick=()=>{if(!tracked){message('Наведите камеру н�
 // Переносим тот же световой эффект, что использовался в первой рабочей AR-сцене с домиком.
 function makeHouseHeartMagic(THREE){
  heartFx=new THREE.Group();heartFx.position.set(0,-.01,.16);anchor.group.add(heartFx);
- const path=new THREE.Path();
- path.moveTo(0,-.29);
- path.bezierCurveTo(-.08,-.255,-.31,-.14,-.36,.03);
- path.bezierCurveTo(-.42,.26,-.19,.33,0,.145);
- path.bezierCurveTo(.19,.33,.42,.26,.36,.03);
- path.bezierCurveTo(.31,-.14,.08,-.255,0,-.29);
- const pts=path.getPoints(100).map(p=>new THREE.Vector3(p.x,p.y,0));
- const geometry=new THREE.BufferGeometry().setFromPoints(pts);
- heartGlow=new THREE.Line(geometry,new THREE.LineBasicMaterial({color:0xf4bc64,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthTest:false}));
- heartGlow.scale.setScalar(1.03);
- heartLine=new THREE.Line(geometry,new THREE.LineBasicMaterial({color:0xffe5b3,transparent:true,opacity:0,depthTest:false}));
- heartFx.add(heartGlow,heartLine);
+ // Рисунок сердца на настоящей открытке НЕ подсвечиваем и не перерисовываем.
+ // Остаются только отдельные золотые огоньки над его центром.
  for(let i=0;i<36;i++){
   const geom=new THREE.CircleGeometry(.004+(i%5)*.0016,8);
   const mat=new THREE.MeshBasicMaterial({color:i%4?0xffd89b:0xfff4d0,transparent:true,opacity:0,depthTest:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
@@ -143,8 +133,6 @@ function animateHouseHeartMagic(t){
  const reveal=between(t,LIGHT_DURATION,LIGHT_DURATION+APPEAR_DURATION);
  const phase=Math.min(1,t/LIGHT_DURATION);
  const fade=1-.95*reveal;
- heartLine.material.opacity=.8*phase*fade;
- heartGlow.material.opacity=(.3+.25*Math.sin(t*3)**2)*phase*fade;
  dust.forEach((p,i)=>{
   const d=p.userData,theta=t*d.velocity+d.phase;
   p.position.set(Math.cos(theta)*d.radius,Math.sin(theta)*d.radius*.78,.07+.02*Math.sin(theta*2));
@@ -196,13 +184,13 @@ $('start').onclick=async()=>{
       const cheeseSec=Math.max(0,sec-LIGHT_DURATION-APPEAR_DURATION);
       paint(ctxAR,cheeseSec);sceneTexture.needsUpdate=true;
       const stage=sec%DURATION;
-      if(stage<LIGHT_DURATION)message('Волшебство начинается · Светятся огоньки');
+      if(stage<LIGHT_DURATION)message('Волшебство начинается · Золотые огоньки');
       else if(stage<LIGHT_DURATION+APPEAR_DURATION)message('Сыры появляются и вырастают из сердца');
       else if(stage<LIGHT_DURATION+APPEAR_DURATION+4.6)message('Бельпер сухо раскалывается — без вытекания');
       else message('Сливочная сердцевина сыра с белой плесенью');
     }else{
       plane.scale.setScalar(.001);
-      if(heartLine){heartLine.material.opacity=0;heartGlow.material.opacity=0;dust.forEach(p=>p.material.opacity=0)}
+      dust.forEach(p=>p.material.opacity=0)
     }
     mindar.renderer.render(mindar.scene,mindar.camera);
   });
