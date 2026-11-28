@@ -24,9 +24,7 @@ button{border:0;border-radius:32px;background:var(--wine);color:#fff7ed;min-heig
 #actions button{min-height:37px;width:100%;padding:6px 6px;font-size:12px;border:1px solid #650d0255;background:#f2efe8;color:#650d02;box-shadow:0 2px 9px #08070866}
 #actions #gift{background:#650d02;border-color:#f2efe8;color:#fffaf0}
 #actions #replay{grid-column:1/-1;justify-self:center;width:min(185px,79%);background:#23101edb;border:1px solid #fff9f0b0;color:#f2efe8}
-#sceneLabel{position:absolute;top:calc(env(safe-area-inset-top) + 128px);left:50%;transform:translateX(-50%);white-space:nowrap;max-width:95vw;padding:6px 13px;border-radius:18px;background:#200d19a8;color:#fff3df;font:13px Georgia,serif;text-shadow:0 1px 5px #000;opacity:0;transition:opacity .3s ease}
-#sceneLabel.show{opacity:1}
-@media(max-height:600px){#cameraLogo{width:min(155px,45vw)}#sceneLabel{top:calc(env(safe-area-inset-top) + 97px)}}
+@media(max-height:600px){#cameraLogo{width:min(155px,45vw)}}
 #demo{position:fixed;inset:0;background:#160e16;display:none;z-index:8;align-items:center;justify-content:center;flex-direction:column;gap:15px;padding:18px}
 #demo canvas{max-width:min(76vw,370px);max-height:74dvh;object-fit:contain;box-shadow:0 16px 42px #0009;border:1px solid #aa8555}
 #demo .bottom{display:flex;gap:10px}#demo button{font-size:12px}
@@ -43,7 +41,6 @@ button{border:0;border-radius:32px;background:var(--wine);color:#fff7ed;min-heig
 <div id="ui"><header>
 <img id="cameraLogo" src="./assets/labrie-logo.svg" alt="Ла БРИ">
 <div id="scanHint">Наведите камеру на открытку</div></header>
-<div id="sceneLabel"></div>
 <footer><div id="actions"><button id="gift" type="button">Получить подарок</button><button id="about" type="button">Узнать о нас больше</button><button id="replay" type="button">Повторить волшебство</button></div></footer></div>
 <div id="demo"><canvas id="demoCanvas" width="600" height="850"></canvas><div class="bottom"><button id="again" type="button">Повторить</button><button id="close" type="button">Закрыть</button></div></div>
 <script type="module">
@@ -238,7 +235,7 @@ function label(t){return t<SCENE?'Глава 1 · Молоко с зимней �
 function paint(t){draw(t);if(texture)texture.needsUpdate=true}
 function hint(visible){$('scanHint').classList.toggle('hide',!visible)}
 function hideOnTrack(){hint(false)}
-function replay(){storyStart=performance.now();pausedAt=0;$('actions').classList.remove('show');$('sceneLabel').classList.remove('show');lastPaint=-1}
+function replay(){storyStart=performance.now();pausedAt=0;$('actions').classList.remove('show');lastPaint=-1}
 $('gift').onclick=()=>{window.location.assign('https://labrie.ru/club')};
 $('about').onclick=()=>{window.location.assign('https://labrie.ru/resources')};
 $('replay').onclick=()=>{if(!tracked){hint(true);return}replay()};
@@ -272,7 +269,6 @@ async function startAR(){
      if(tracked){
        const sec=Math.min(STORY,(performance.now()-storyStart)/1000);
        if(lastPaint<0||sec-lastPaint>=1/25||sec===STORY){paint(sec);lastPaint=sec}
-       if(sec>1.3){$('sceneLabel').textContent=label(sec);$('sceneLabel').classList.add('show')}
        if(sec>=25)$('actions').classList.add('show');
      }
      mindar.renderer.render(mindar.scene,mindar.camera);
@@ -294,6 +290,6 @@ function openDemo(){
  demoOn=true;$('demo').style.display='flex';demoStart=performance.now();demoRAF=requestAnimationFrame(demoLoop)
 }
 $('again').onclick=()=>{demoStart=performance.now()};
-$('close').onclick=()=>{demoOn=false;cancelAnimationFrame(demoRAF);$('demo').style.display='none'};
-if(new URLSearchParams(location.search).has('demo')){openDemo()}
+$('close').onclick=()=>{demoOn=false;cancelAnimationFrame(demoRAF);$('demo').style.display='none';$('intro').classList.remove('hide')};
+if(new URLSearchParams(location.search).has('demo')){$('intro').classList.add('hide');openDemo()}
 </script></body></html>
