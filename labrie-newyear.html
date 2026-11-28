@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#650d02"><title>Ла БРИ — Новогодняя сказка (тест)</title>
+<style>
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:#f2efe8;color:#650d02;font-family:Georgia,serif}
+#ar{position:fixed;inset:0;overflow:hidden;background:#190e17}#ar video,#ar canvas{position:absolute;inset:0}
+#intro{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;text-align:center;padding:22px;background:#f2efe8}
+#intro.hidden{display:none}.panel{max-width:380px;margin:auto}
+.logo{display:block;width:min(250px,76vw);margin:0 auto 28px}.logo img{width:100%}
+h1{font-size:32px;font-weight:400;line-height:1.13;margin:0 0 16px}
+p{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{border:0;border-radius:32px;background:#650d02;color:#fff;padding:13px 22px;min-height:44px;font:600 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+#ui{display:none;position:fixed;inset:0;pointer-events:none;z-index:5;color:white}
+#ui header{position:absolute;top:calc(env(safe-area-inset-top) + 15px);width:100%;text-align:center}
+#ui header img{width:min(185px,50vw);filter:brightness(0) invert(1);opacity:.97}
+#hint{width:max-content;margin:10px auto;background:#f2efe8;color:#650d02;border-radius:20px;padding:8px 13px;font:12px sans-serif}
+#ui footer{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);width:100%;text-align:center}
+#ui footer button{pointer-events:auto;font-size:12px}
+#progress{margin:8px auto;font:12px sans-serif;text-shadow:0 1px 5px #000}
+#error{font:12px sans-serif;color:#9e291c;white-space:pre-wrap}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
+</head><body>
+<div id="ar"></div>
+<div id="intro"><div class="panel"><div class="logo"><img src="./assets/labrie-logo.svg" alt="Ла БРИ"></div>
+<h1>Новогодняя сказка<br>сыроварни Labrie</h1>
+<p>Три сцены: дойка коровы, молоко в медном чане и волшебное приготовление сыра.</p>
+<button id="start" type="button">Открыть камеру</button><p id="error"></p>
+</div></div>
+<div id="ui"><header><img src="./assets/labrie-logo.svg" alt="Ла БРИ">
+<div id="hint">Наведите камеру на открытку</div></header>
+<footer><button id="replay" type="button">Повторить волшебство</button><div id="progress"></div></footer></div>
+<script type="module">
+const $=id=>document.getElementById(id);
+const FRAMES=16,COLS=4,FRAME_DURATION=2.1,STORY_SECONDS=FRAMES*FRAME_DURATION;
+const W=252,H=384,board=document.createElement('canvas'),ctx=board.getContext('2d',{alpha:true});board.width=W;board.height=H;
+let atlas,tracked=false,startTime=0,lostTime=0,anchor,mindar,plane,texture;
+function frameAt(t){return Math.min(FRAMES-1,Math.floor(Math.max(0,t)/FRAME_DURATION))}
+function paintFrame(i){
+ ctx.clearRect(0,0,W,H);
+ ctx.drawImage(atlas,(i%COLS)*atlas.width/COLS,Math.floor(i/COLS)*atlas.height/4,atlas.width/COLS,atlas.height/4,0,0,W,H);
+ texture.needsUpdate=true;
+}
+async function loadAtlas(){
+ // Approved 4×4 Christmas storyboard; intentionally keep original approved picture, without substituting a generic drawing.
+ const r=await fetch('./assets/labrie-newyear-variant3.webp.b64.txt');
+ if(!r.ok)throw new Error('Для этой тестовой сцены ещё не загружены утверждённые кадры новогодней сказки.');
+ const binary=atob((await r.text()).replace(/\s/g,'')),bytes=new Uint8Array(binary.length);
+ for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+ const blob=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
+ const image=new Image();image.src=blob;
+ try{await image.decode();return image}finally{URL.revokeObjectURL(blob)}
+}
+$('start').onclick=async()=>{
+ $('start').disabled=true;$('error').textContent='';
+ try{
+  atlas=await loadAtlas();
+  const response=await fetch('./targets.mind');
+  if(!response.ok)throw new Error('Нет файла распознавания открытки.');
+  const url=URL.createObjectURL(await response.blob());
+  const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
+  mindar=new MindARThree({container:$('ar'),imageTargetSrc:url,maxTrack:1,filterMinCF:.001,filterBeta:.05,warmupTolerance:5,missTolerance:12,uiLoading:'yes',uiScanning:'no'});
+  anchor=mindar.addAnchor(0);
+  texture=new THREE.CanvasTexture(board);texture.colorSpace=THREE.SRGBColorSpace;
+  texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
+  const mat=new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,depthWrite:false,toneMapped:false});
+  plane=new THREE.Mesh(new THREE.PlaneGeometry(1.38,1.38*H/W),mat);
+  plane.position.set(0,0,.12);anchor.group.add(plane);
+  paintFrame(0);
+  anchor.onTargetFound=()=>{const t=performance.now();if(startTime===0)startTime=t;else if(lostTime)startTime+=t-lostTime;lostTime=0;tracked=true;$('hint').style.display='none'};
+  anchor.onTargetLost=()=>{lostTime=performance.now();tracked=false;$('hint').style.display='block'};
+  $('intro').classList.add('hidden');$('ui').style.display='block';
+  await mindar.start();
+  let lastFrame=-1;
+  mindar.renderer.setAnimationLoop(()=>{
+    if(tracked){const seconds=(performance.now()-startTime)/1000,fr=frameAt(seconds);
+      if(fr!==lastFrame){paintFrame(fr);lastFrame=fr}
+      const part=seconds<10.5?'Дойка коровы':seconds<21?'Молоко отправляется в чан':'Волшебство сыроварения';
+      $('progress').textContent=seconds>=STORY_SECONDS?'Сказка ожила':part;
+    }
+    mindar.renderer.render(mindar.scene,mindar.camera);
+  });
+ }catch(e){$('error').textContent=e.message;console.error(e)}
+ finally{$('start').disabled=false}
+};
+$('replay').onclick=()=>{if(!tracked)return;startTime=performance.now();lostTime=0;paintFrame(0)};
+</script></body></html>
