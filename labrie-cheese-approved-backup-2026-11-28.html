@@ -1,0 +1,316 @@
+<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#650d02">
+<title>Ла БРИ — Живое сырное сердце</title>
+<style>
+:root{--burgundy:#4b1d2c;--gold:#edc994}*{box-sizing:border-box}html,body{margin:0;height:100%;background:#1b0d14;color:#fff6ea;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+#ar{position:fixed;inset:0;overflow:hidden}#ar video,#ar canvas{position:absolute;left:0;top:0}#shade{position:fixed;inset:0;background:linear-gradient(#1a0713b5,transparent 25%,transparent 65%,#1a0713db);pointer-events:none}
+#intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;text-align:center;padding:25px;background:radial-gradient(circle at 50% 20%,#834050,#491b2b 60%,#1b0d14);overflow:auto}#intro.hidden{display:none}.panel{max-width:390px;width:100%;margin:auto}h1{font:normal 36px/1.15 Georgia,serif;margin:13px 0}h1 em{color:var(--gold)}.eyebrow{font-size:11px;letter-spacing:.14em;color:var(--gold);font-weight:750}p{line-height:1.55;color:#f1ddd1;margin:17px auto 22px}button,a.action{border:0;border-radius:50px;background:var(--gold);color:#461b2b;padding:14px 22px;min-height:48px;font-size:15px;font-weight:750;cursor:pointer;text-decoration:none}button.alt{background:#ffffff16;color:#fff5e9;border:1px solid #ecd0ac90}button:disabled{opacity:.6}
+#intro .panel button{margin:4px}#error{font-size:13px;white-space:pre-wrap;color:#fff2df;min-height:10px}
+#ui{display:none;position:fixed;inset:0;pointer-events:none}header{position:absolute;top:0;left:0;right:0;text-align:center;padding:calc(env(safe-area-inset-top) + 15px) 10px}.brand{font:italic 27px Georgia,serif}.brand b{font:900 22px Arial,sans-serif}#status{font-size:12px;margin-top:10px;text-shadow:0 2px 6px #10050b}footer{position:absolute;bottom:0;width:100%;text-align:center;padding:15px 12px calc(env(safe-area-inset-bottom) + 18px)}#actions{pointer-events:auto;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}#actions button,#actions a{font-size:13px;min-height:42px;padding:11px 14px}
+#modal{display:none;position:fixed;z-index:12;inset:0;background:radial-gradient(circle at center,#512339,#190d17);align-items:center;justify-content:center;flex-direction:column;gap:15px;padding:17px;text-align:center}#previewStage{background:linear-gradient(#4e2639,#150b14);padding:16px;border-radius:12px;max-width:100%;box-shadow:0 12px 38px #0006}#preview{display:block;width:min(90vw,460px);height:auto;max-height:58dvh;object-fit:contain}
+#livePreview{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}#ar canvas{z-index:1}
+
+/* Стартовый экран в фирменных цветах labrie.ru */
+#intro{
+ background:#f2efe8;
+ color:#650d02;
+ padding:32px 25px;
+}
+#intro::before{
+ content:"";position:absolute;inset:16px;border:1px solid rgba(101,13,2,.19);
+ pointer-events:none;
+}
+#intro .panel{position:relative;z-index:1;max-width:390px;}
+#intro .eyebrow{color:#650d02;font-size:11px;font-weight:500;letter-spacing:.14em;}
+#intro .brand-name{
+ font:italic 30px/1.15 Georgia,"Times New Roman",serif;
+ letter-spacing:-.02em;color:#650d02;margin-bottom:32px;
+}
+#intro .brand-name b{font:800 25px/1 Arial,sans-serif;letter-spacing:-.035em;}
+#intro h1{color:#650d02;font:normal clamp(34px,8vw,44px)/1.12 Georgia,"Times New Roman",serif;margin:14px 0 20px;}
+#intro h1 em{display:block;font:italic .82em/1.25 Georgia,"Times New Roman",serif;color:#650d02;padding-top:4px;}
+#intro .ornament{height:1px;width:55px;background:#650d02;margin:23px auto 25px;opacity:.55;}
+#intro p.intro-copy{font-size:16px;line-height:1.62;color:#4b332e;margin:0 auto 28px;max-width:345px;}
+#intro button#start{display:block;margin:0 auto;min-width:224px;max-width:100%;
+ background:#650d02;color:#f2efe8;border:1px solid #650d02;border-radius:32px;
+ font:500 16px/1.15 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ padding:16px 27px;min-height:52px;box-shadow:none;transition:background-color .2s ease;
+}
+#intro button#start:focus-visible{outline:2px solid #650d02;outline-offset:4px;}
+#intro .camera-hint{font-size:12px;line-height:1.5;color:#806c65;margin:19px auto 0;max-width:300px;}
+#intro #error{color:#650d02;margin-top:15px;}
+/* После запуска AR экран остаётся чистым — без кнопок и ссылок. */
+/* Камера: оригинальный логотип, никаких надписей об этапах анимации, только три кнопки. */
+#ui{z-index:4}
+#ui header{padding:calc(env(safe-area-inset-top) + 12px) 12px 0;pointer-events:none}
+#cameraLogo svg{display:block;margin:auto;width:min(190px,54vw);height:auto;max-height:86px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
+#ui #status{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+#ui #scanHint{display:block;opacity:0;visibility:hidden;transform:translateY(-9px);pointer-events:none;
+ margin:10px auto 0;padding:9px 16px;width:max-content;max-width:min(330px,90vw);
+ background:rgba(242,239,232,.96);color:#650d02;border:1px solid rgba(101,13,2,.25);
+ border-radius:25px;text-align:center;font-size:13px;font-weight:500;line-height:1.35;
+ box-shadow:0 4px 18px rgba(19,5,10,.25);
+ transition:opacity .34s ease,transform .34s ease,visibility .34s ease}
+#ui #scanHint.show{opacity:1;visibility:visible;transform:translateY(0)}
+#ui footer{display:block!important;bottom:0;padding:15px 13px calc(env(safe-area-inset-bottom) + 18px);pointer-events:none}
+#ui #actions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:7px;row-gap:6px;width:min(320px,calc(100vw - 28px));margin:auto;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .4s ease,transform .4s ease}
+#ui #actions.show{opacity:1;transform:translateY(0);pointer-events:auto}
+#ui #actions button{min-height:38px;width:100%;margin:0;border-radius:24px;font-size:12px;font-weight:600;line-height:1.15;padding:6px 6px;background:#f2efe8;color:#650d02;border:1px solid rgba(101,13,2,.3);box-shadow:0 2px 12px rgba(0,0,0,.25)}
+#ui #gift{background:#650d02!important;border-color:#f2efe8!important;color:#fff9f1!important}
+#ui #replay{grid-column:1 / -1;justify-self:center;width:min(184px,78%)!important;background:rgba(26,11,15,.74)!important;color:#f2efe8!important;border:1px solid rgba(242,239,232,.7)!important;backdrop-filter:blur(7px)}
+#ui #actionNotice{display:none;margin:0 auto 12px;padding:9px 15px;width:min(260px,78vw);font-size:12px;line-height:1.35;border-radius:14px;background:rgba(39,11,20,.92);color:#f2efe8;text-align:center;pointer-events:none}
+#ui #actionNotice.show{display:block}
+@media (max-height:620px){#cameraLogo svg{width:min(160px,43vw)}#ui footer{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}#ui #actions{column-gap:6px;row-gap:4px}#ui #actions button{min-height:36px}}
+
+@media (max-height:620px){#intro .brand-name{margin-bottom:15px}#intro h1{margin:8px 0 10px}#intro .ornament{margin:15px auto}#intro p.intro-copy{margin-bottom:18px}}
+
+/* Подлинный логотип из фирменных материалов, без имитации шрифтом. */
+#intro svg.brand-logo{display:block;width:min(286px,83vw);height:auto;margin:0 auto 28px;object-fit:contain;}
+@media (max-height:650px){#intro svg.brand-logo{width:min(245px,78vw);margin-bottom:14px;}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
+</head><body>
+<div id="ar"></div><div id="shade"></div>
+<div id="intro"><div class="panel">
+<svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="115 90 1386 596" role="img" aria-label="Ла БРИ — ремесленная сыроварня"><path fill="#650d02" fill-rule="evenodd" d="M1478,581 1476,584 1476,589 1477,591 1481,594 1476,601 1478,601 1485,593 1490,593 1491,594 1491,601 1493,601 1493,580 1492,579 1484,579 1483,580 Z M1478,584 1482,581 1490,581 1491,582 1491,591 1490,592 1483,592 1482,591 1480,591 1478,589 Z M1447,579 1447,601 1449,601 1449,592 1450,591 1463,591 1464,592 1464,601 1466,601 1466,580 1464,579 1464,588 1463,589 1450,589 1449,588 1449,580 Z M1433,581 1429,579 1422,579 1417,583 1416,582 1416,580 1415,579 1414,580 1414,610 1416,610 1416,599 1417,598 1423,602 1428,602 1433,600 1435,598 1437,594 1437,587 Z M1422,581 1429,581 1431,582 1435,587 1435,594 1432,598 1428,600 1423,600 1421,599 1416,593 1416,588 1418,584 Z M1387,581 1385,585 1387,585 1388,583 1391,581 1397,581 1400,583 1401,588 1400,589 1389,589 1388,590 1386,590 1384,592 1384,598 1387,601 1389,601 1390,602 1394,602 1400,599 1403,601 1403,584 1401,581 1397,579 1391,579 Z M1386,597 1386,593 1388,591 1400,591 1401,592 1401,595 1395,600 1389,600 Z M1358,579 1358,601 1372,601 1375,598 1375,593 1372,590 1375,587 1375,583 1372,580 1369,580 1368,579 Z M1360,592 1361,591 1370,591 1373,593 1373,597 1369,600 1361,600 1360,599 Z M1360,582 1361,581 1370,581 1373,584 1373,587 1371,589 1361,589 1360,588 Z M1334,579 1333,580 1331,580 1326,585 1325,592 1327,597 1331,601 1333,601 1334,602 1339,602 1344,600 1347,597 1347,595 1348,594 1348,587 1347,586 1347,584 1343,580 1341,580 1340,579 Z M1333,581 1340,581 1342,582 1346,587 1346,594 1345,596 1340,600 1334,600 1328,595 1328,593 1327,592 1328,586 Z M1310,579 1303,579 1298,582 1297,582 1296,581 1296,579 1295,579 1295,610 1297,610 1297,599 1298,598 1301,601 1303,601 1304,602 1309,602 1310,601 1312,601 1317,595 1317,593 1318,592 1317,585 1315,582 Z M1303,581 1309,581 1311,582 1315,586 1315,588 1316,589 1315,595 1309,600 1303,600 1301,599 1297,594 1297,587 1298,585 Z M1283,579 1281,580 1281,601 1283,601 Z M1258,579 1257,580 1257,601 1270,601 1274,598 1274,591 1273,589 1270,587 1260,587 1259,586 1259,579 Z M1259,590 1260,589 1269,589 1272,592 1272,597 1270,599 1260,599 1259,598 Z M1234,579 1233,580 1231,580 1227,584 1227,586 1226,587 1226,595 1230,600 1234,602 1239,602 1244,600 1248,594 1246,594 1245,596 1240,600 1234,600 1232,599 1228,594 1228,587 1229,585 1234,581 1240,581 1242,582 1245,586 1247,586 1247,584 1244,581 1240,579 Z M1190,580 1187,583 1186,588 1191,595 1186,601 1189,601 1195,593 1200,593 1201,594 1201,601 1203,601 1203,579 1194,579 1193,580 Z M1188,585 1193,581 1201,581 1202,582 1202,591 1201,592 1193,592 1188,588 Z M1162,580 1159,583 1159,585 1161,585 1161,584 1165,581 1171,581 1174,584 1175,588 1174,589 1162,589 1160,590 1157,594 1158,599 1161,601 1167,602 1168,601 1171,601 1174,598 1175,599 1175,601 1177,601 1177,585 1176,583 1171,579 1164,579 Z M1159,596 1160,593 1162,591 1174,591 1175,592 1174,596 1171,599 1169,599 1168,600 1163,600 1161,599 Z M1129,579 1128,580 1128,601 1130,601 1130,592 1131,591 1144,591 1145,592 1145,601 1147,601 1147,579 1145,580 1145,588 1144,589 1131,589 1130,588 1130,579 Z M1098,579 1097,580 1097,601 1099,601 1099,592 1100,591 1114,591 1115,592 1115,601 1117,601 1117,580 1115,579 1115,588 1114,589 1100,589 1099,588 1099,579 Z M1073,579 1071,580 1066,586 1066,589 1065,590 1066,595 1071,601 1073,601 1074,602 1079,602 1084,600 1086,598 1087,595 1085,595 1083,598 1079,600 1074,600 1068,595 1068,592 1069,591 1088,591 1088,588 1086,583 1084,581 1080,579 Z M1068,586 1073,581 1080,581 1084,584 1086,588 1085,589 1069,589 1068,588 Z M1040,579 1040,584 1039,585 1039,596 1037,599 1034,599 1034,601 1038,601 1040,599 1040,597 1041,596 1041,585 1043,581 1053,581 1054,582 1054,601 1056,601 1056,580 1055,579 Z M1015,579 1014,580 1012,580 1008,584 1007,586 1007,595 1011,600 1015,602 1020,602 1025,600 1027,598 1028,594 1027,594 1026,596 1021,600 1015,600 1013,599 1009,594 1009,587 1010,585 1015,581 1021,581 1023,582 1026,586 1028,586 1028,585 1025,581 1021,579 Z M985,579 984,580 982,580 978,584 978,586 977,587 977,594 978,595 978,597 981,600 985,602 991,602 995,600 998,597 998,595 991,600 985,600 980,596 979,592 980,591 999,591 999,587 997,583 994,580 992,580 991,579 Z M979,587 983,582 985,581 991,581 996,585 997,588 996,589 980,589 Z M944,579 944,601 946,601 946,586 947,585 955,595 958,593 964,585 965,586 965,601 967,601 967,579 963,582 956,592 953,590 948,582 Z M920,579 914,583 912,587 912,594 916,600 920,602 926,602 930,600 933,597 933,595 926,600 920,600 915,596 914,592 915,591 934,591 934,587 933,586 933,584 929,580 927,580 926,579 Z M914,587 915,585 920,581 926,581 932,586 932,588 931,589 915,589 Z M899,580 897,580 896,579 890,579 884,583 883,582 883,579 881,580 881,610 883,610 883,599 884,598 888,601 890,601 891,602 896,602 900,600 903,597 903,595 904,594 904,586 Z M890,581 896,581 898,582 902,587 902,594 901,596 896,600 890,600 888,599 884,595 884,593 883,592 884,586 Z M1299,334 1299,539 1356,539 1421,449 1423,450 1423,473 1422,474 1422,538 1423,539 1491,539 1492,538 1492,335 1491,334 1434,334 1369,423 1368,422 1368,334 Z M1092,334 1092,539 1162,539 1162,493 1163,492 1191,492 1192,491 1203,491 1204,490 1214,489 1215,488 1218,488 1219,487 1227,485 1236,481 1248,473 1261,459 1264,453 1266,451 1267,447 1269,444 1269,442 1271,438 1271,435 1272,434 1272,431 1273,430 1273,425 1274,424 1274,403 1273,402 1273,396 1272,395 1272,392 1271,391 1271,388 1270,387 1269,382 1265,373 1259,364 1247,352 1240,347 1228,341 1226,341 1219,338 1216,338 1211,336 1207,336 1206,335 1198,335 1197,334 Z M1162,390 1180,390 1181,391 1187,391 1194,394 1200,400 1202,403 1203,409 1204,410 1204,417 1203,418 1202,424 1194,433 1187,436 1182,436 1181,437 1162,437 1161,436 1161,391 Z M882,334 881,335 881,538 882,539 1002,539 1003,538 1016,537 1017,536 1020,536 1021,535 1026,534 1029,532 1033,531 1046,522 1054,513 1060,502 1060,500 1063,493 1064,483 1065,482 1065,465 1064,464 1063,454 1059,445 1059,443 1053,433 1043,423 1034,417 1014,410 1008,410 1007,409 952,409 951,408 951,388 952,387 1049,387 1049,334 Z M950,458 951,457 979,457 980,458 984,458 988,460 993,465 995,470 995,477 993,482 988,487 983,489 951,489 950,488 Z M710,102 704,97 695,97 683,102 674,108 670,112 664,116 655,125 654,125 631,148 631,149 599,183 599,184 575,211 575,212 560,229 556,235 546,246 544,250 514,290 512,294 493,319 491,323 452,375 440,389 437,394 433,398 433,399 429,403 429,404 425,408 425,409 421,413 421,414 417,418 417,419 413,423 413,424 409,428 409,429 405,433 405,434 401,438 401,439 397,443 397,444 393,448 393,449 389,453 325,534 320,539 316,545 289,576 289,577 268,599 268,600 242,625 241,625 227,637 215,645 210,647 206,650 204,650 195,654 191,654 190,655 177,655 176,654 172,654 162,649 151,638 144,626 144,624 142,620 142,616 141,615 141,609 140,608 140,594 141,593 141,586 142,585 143,576 144,575 145,569 146,568 151,551 153,548 153,546 164,523 182,496 191,486 191,485 222,455 246,439 252,436 254,436 259,433 261,433 268,430 277,429 278,428 293,428 294,429 298,429 307,433 316,441 320,448 321,454 322,455 322,467 321,468 321,471 319,474 319,476 316,481 317,485 321,485 325,478 327,468 328,467 328,455 327,454 327,450 326,449 325,444 322,438 319,434 312,428 301,423 290,422 289,421 279,421 278,422 271,422 270,423 262,424 261,425 259,425 255,427 252,427 249,429 244,430 239,433 237,433 227,438 225,440 222,441 211,448 198,458 191,465 190,465 170,486 159,500 149,515 136,540 136,542 133,547 133,549 128,562 128,565 126,570 126,574 125,575 125,579 124,580 124,584 123,585 123,592 122,593 122,613 123,614 124,625 125,626 127,634 129,637 129,639 139,653 152,664 164,670 166,670 173,673 181,674 182,675 201,675 202,674 207,674 208,673 215,672 234,664 256,650 273,637 284,627 285,627 301,612 302,612 318,596 319,596 337,577 337,576 346,567 346,566 364,546 379,526 383,522 401,498 408,487 414,480 440,441 443,438 455,419 460,413 461,410 472,394 473,391 483,376 487,368 493,360 498,351 501,348 502,345 510,334 511,331 531,301 534,298 535,295 538,292 551,272 562,258 577,236 587,224 592,216 596,212 602,203 606,199 624,175 643,155 643,154 671,127 673,128 664,146 662,148 661,151 659,153 658,156 656,158 655,161 653,163 652,166 650,168 649,171 647,173 646,176 644,178 643,181 641,183 640,186 638,188 637,191 635,193 634,196 632,198 631,201 629,203 628,206 626,208 625,211 623,213 622,216 608,238 606,243 604,245 599,255 597,257 592,267 590,269 585,279 576,293 534,377 534,379 531,384 531,386 528,391 528,393 520,411 514,430 512,433 511,439 506,452 506,455 504,459 504,462 503,463 503,466 501,471 501,475 500,476 500,480 499,481 498,490 497,491 497,516 498,517 498,520 499,521 500,526 505,535 511,541 517,544 523,545 524,546 533,546 534,545 537,545 550,540 564,531 580,517 581,517 606,493 607,495 606,496 605,504 604,505 604,516 607,523 611,528 615,530 618,530 619,531 626,531 627,530 630,530 631,529 636,528 656,516 677,500 704,476 705,478 699,490 699,492 696,499 696,502 695,503 695,517 696,518 697,523 700,528 706,534 710,536 712,536 713,537 718,537 719,538 732,537 741,533 743,533 771,518 792,504 795,501 805,495 827,478 839,467 840,467 848,459 849,457 847,454 845,454 844,453 831,463 824,467 817,473 810,477 807,480 789,492 786,493 774,501 769,503 767,505 750,512 738,513 736,512 732,507 733,501 739,490 765,458 786,429 794,413 794,410 795,409 794,401 790,395 785,393 780,393 779,394 773,395 765,399 756,406 734,430 733,429 733,422 732,421 731,415 726,408 722,405 714,402 699,402 698,403 691,404 690,405 685,406 680,409 678,409 676,411 671,413 651,428 635,445 610,479 599,491 599,492 584,506 576,512 559,522 557,522 549,526 546,526 541,528 534,528 529,523 529,521 528,520 528,506 529,505 529,500 530,499 530,495 531,494 532,487 534,483 534,480 535,479 540,462 542,459 546,446 553,431 553,429 556,424 558,417 572,388 574,386 597,341 599,339 603,330 609,321 612,314 614,312 617,305 619,303 622,296 624,294 627,287 634,276 638,267 645,256 658,230 660,228 699,151 699,149 706,134 706,132 709,125 710,118 711,117 712,110 711,109 Z M704,476 705,475 706,476 705,477 Z M713,418 716,421 719,429 719,449 690,475 658,499 636,512 627,512 625,510 625,501 626,500 626,497 628,494 628,492 642,465 654,449 671,432 682,424 696,417 708,416 Z"/></svg>
+<h1>От сердца к сердцу <em>через сыр</em></h1>
+<div class="ornament" aria-hidden="true"></div>
+<p class="intro-copy">Есть вкусы, которыми хочется делиться. Мы приготовили для вас маленькое гастрономическое чудо — оно оживёт прямо на этой открытке.</p>
+<button id="start" type="button">Открыть камеру</button>
+<p class="camera-hint">Разрешите доступ к камере и наведите телефон на открытку.</p>
+<p id="error" role="alert"></p>
+</div></div>
+<div id="ui">
+<header><div id="cameraLogo" aria-label="Ла БРИ — ремесленная сыроварня"></div><div id="scanHint" role="status" aria-live="polite">Наведите камеру на открытку</div><div id="status" aria-live="off">Наведите камеру на открытку</div></header>
+<footer>
+<div id="actionNotice" role="status" aria-live="polite"></div>
+<div id="actions">
+<button id="gift" type="button">Получить подарок</button>
+<button id="about" type="button">Узнать о нас больше</button>
+<button id="replay" type="button">Повторить волшебство</button>
+</div>
+</footer></div>
+<div id="modal"><div class="eyebrow">КАК ОЖИВАЮТ СЫРЫ</div><div id="previewStage"><canvas id="preview" width="460" height="332"></canvas></div><div id="previewStatus">Раскол Бельпера и сливочная сердцевина</div><button id="close">Вернуться к открытке</button></div>
+<script type="module">
+const $=id=>document.getElementById(id);
+// Для экрана камеры используем копию подлинного SVG с приветственной страницы.
+// Сохраняем контуры оригинала, меняем только цвет для контраста с камерой.
+const logoInCamera=document.querySelector('#intro svg.brand-logo').cloneNode(true);
+logoInCamera.classList.remove('brand-logo');
+logoInCamera.classList.add('camera-logo');
+logoInCamera.querySelectorAll('[fill]').forEach(p=>{if(p.getAttribute('fill')!=='none')p.setAttribute('fill','#f2efe8')});
+$('cameraLogo').appendChild(logoInCamera);
+const W=460,H=332,COLS=4,FRAMES=16,CHEESE_DURATION=8.4,LIGHT_DURATION=3,APPEAR_DURATION=5.2,DURATION=LIGHT_DURATION+APPEAR_DURATION+CHEESE_DURATION;
+let sheet=null,sheetPromise=null,mindar=null,anchor=null,sceneTexture=null,plane=null,heartFx=null,dust=[],tracked=false,trackingStarted=0,pausedAt=0;
+let previewActive=false,previewStarted=0,previewStream=null,previewCamera=null,ctxAR=null;
+const canvasAR=document.createElement('canvas');canvasAR.width=W;canvasAR.height=H;ctxAR=canvasAR.getContext('2d',{alpha:true});
+const previewCanvas=$('preview'),ctxPreview=previewCanvas.getContext('2d',{alpha:true});
+function message(s){$('status').textContent=s}
+function fail(e){console.error('Labrie AR:',e);let txt=(e?.name==='NotAllowedError')?'Нет разрешения для камеры. Разрешите доступ к камере в Safari.':e?.message||String(e);$('error').textContent=txt+'\nОткройте страницу в Safari или Chrome и повторите.';message('Ошибка: '+txt)}
+async function loadSheet(){
+ if(sheet)return sheet;
+ if(sheetPromise)return sheetPromise;
+ sheetPromise=(async()=>{
+   const res=await fetch('./assets/labrie-cheese-frames.webp.b64.txt');
+   if(!res.ok)throw new Error('Не удалось загрузить анимацию (HTTP '+res.status+')');
+   const b64=(await res.text()).replace(/\s/g,'');const raw=atob(b64);
+   const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+   const objectUrl=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
+   try{const img=new Image();img.src=objectUrl;await img.decode();sheet=img;return img}
+   finally{URL.revokeObjectURL(objectUrl)}
+ })();try{return await sheetPromise}catch(e){sheetPromise=null;throw e}
+}
+function between(x,a,b){let u=Math.max(0,Math.min(1,(x-a)/(b-a)));return u*u*(3-2*u)}
+function paint(ctx,secs){
+ if(!sheet)return;
+ ctx.clearRect(0,0,W,H);
+ let t=Math.max(0,Math.min(secs,CHEESE_DURATION-0.001)); // Сыр доходит до финального кадра и остаётся там, без зацикленного мигания.
+ // Основа всегда одна и та же: фон и рисунок открытки не могут мигать при смене кадров.
+ const draw=(n,a)=>{if(a<=0)return;ctx.globalAlpha=a;ctx.drawImage(sheet,(n%COLS)*W,Math.floor(n/COLS)*H,W,H,0,0,W,H)};
+ draw(0,1);ctx.globalAlpha=1;
+ // Меняем ТОЛЬКО области двух сыров — раскалывающегося Бельпера и белой плесени.
+ // Остальной натюрморт, золотая спираль и фон остаются неизменными.
+ const f=15*between(t,0,7.6),i0=Math.floor(f),i1=Math.min(15,i0+1),mix=f-i0;
+ const localMotion=(cx,cy,rx,ry)=>{
+   ctx.save();ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.clip();
+   ctx.clearRect(0,0,W,H); // заменяем локальный участок, не удваиваем его прозрачность
+   // Первый кадр всегда полностью непрозрачен, следующий плавно добавляется сверху.
+   // Старый приём (1-mix)+mix делал участок на миг прозрачным и заставлял сердце мигать.
+   draw(i0,1);draw(i1,mix);
+   ctx.restore();ctx.globalAlpha=1;
+ };
+ if(t>0){
+   localMotion(139,83,88,68); // шарик Бельпера (верхняя левая подставка)
+   localMotion(269,230,78,43); // только тело мягкого сыра, не затрагиваем область рисунка сердца
+ }
+ // When Belper cracks, a few solid pale crumbs scatter. Never render liquid from the hard ball.
+ let crack=between(t,2.3,4.2);
+ if(crack>.01){
+  ctx.save();ctx.shadowColor='#120906';ctx.shadowBlur=2;
+  for(let i=0;i<18;i++){
+    let k=(i*37)%19/19,p=Math.min(1,Math.max(0,(t-2.2-k*.7)/3.3));
+    if(p<=0)continue;
+    const x=145+Math.sin(i*2.77)*(11+18*p)+(i%3-1)*2;
+    const y=99+((i*17)%15)/5+19*p*p;
+    ctx.fillStyle=i%3===0?'#dfc5a4':'#f5e6cf';
+    ctx.beginPath();ctx.ellipse(x,y,1.2+(i%3)*.3,.9+(i%4)*.2,i*.3,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+ }
+ // Glossy, thick white-rind cream elongates slowly out of the cut, rather than spraying.
+ let cream=between(t,3.6,7.3);
+ if(cream>.01){
+  ctx.save();ctx.globalAlpha=.79*cream;
+  const cy=266+cream*15;
+  const g=ctx.createLinearGradient(256,265,273,297);
+  g.addColorStop(0,'#fff9dd');g.addColorStop(.45,'#fff0bc');g.addColorStop(1,'#eecb8e');
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(255,264);ctx.bezierCurveTo(260,270,264,276,263,cy);ctx.bezierCurveTo(262,cy+5,274,cy+5,273,cy-1);ctx.bezierCurveTo(273,271,274,268,269,264);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#fff9e6';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(258,270);ctx.quadraticCurveTo(261,276,265,cy-2);ctx.stroke();ctx.restore();
+ }
+ // Не накладываем мерцающую световую полосу на рисунок сердца на открытке.
+}
+// Первоначальный эффект домика: огоньки на сердце 3 сек., затем рост композиции за 5,2 сек.
+const stageCanvas=document.createElement('canvas');stageCanvas.width=W;stageCanvas.height=H;
+const stageCtx=stageCanvas.getContext('2d',{alpha:true});
+function paintStory(ctx,elapsed){
+ const t=Math.max(0,elapsed%DURATION),reveal=between(t,LIGHT_DURATION,LIGHT_DURATION+APPEAR_DURATION);
+ ctx.clearRect(0,0,W,H);
+ if(reveal>0){
+  paint(stageCtx,Math.max(0,t-LIGHT_DURATION-APPEAR_DURATION));
+  ctx.save();ctx.translate(W/2,H/2);
+  const scale=Math.max(.001,reveal);
+  ctx.scale(scale,scale);ctx.globalAlpha=Math.min(1,reveal*1.5);
+  ctx.drawImage(stageCanvas,-W/2,-H/2);ctx.restore();
+ }
+ if(t<LIGHT_DURATION+APPEAR_DURATION){
+  ctx.save();const a=Math.max(.08,1-.85*reveal);
+  const glow=ctx.createRadialGradient(W/2,H/2,4,W/2,H/2,106);
+  glow.addColorStop(0,'rgba(255,231,169,'+(.8*a)+')');glow.addColorStop(.37,'rgba(247,177,81,'+(.3*a)+')');glow.addColorStop(1,'rgba(247,177,81,0)');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+  for(let i=0;i<34;i++){
+   const phase=i*2.39996+t*(.5+i%5*.1);
+   const radius=10+((i*31)%90);
+   const x=W/2+Math.cos(phase)*radius;
+   const y=H/2+Math.sin(phase)*radius*.65;
+   const size=1+(i%4)*.85;ctx.globalAlpha=(.3+.6*Math.abs(Math.sin(phase*1.3)))*a;
+   ctx.fillStyle=i%4===0?'#fff3c9':'#ffd58d';
+   ctx.beginPath();ctx.arc(x,y,size,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+ }
+}
+function previewLoop(){
+ if(!previewActive)return;
+ let t=(performance.now()-previewStarted)/1000;paintStory(ctxPreview,t);
+ $('previewStatus').textContent=t%DURATION<LIGHT_DURATION?'Золотые огоньки над сердцем':t%DURATION<LIGHT_DURATION+APPEAR_DURATION?'Композиция появляется и вырастает':t%DURATION<LIGHT_DURATION+APPEAR_DURATION+3?'Бельпер сухо раскалывается':'Течёт только сердцевина сыра с белой плесенью';
+ requestAnimationFrame(previewLoop);
+}
+async function showPreview(){try{await loadSheet();previewActive=true;previewStarted=performance.now();$('modal').style.display='flex';requestAnimationFrame(previewLoop)}catch(e){fail(e)}}
+// Оставляем просмотр без камеры технически доступным для отладки, но не показываем его кнопку.
+$('close').onclick=()=>{previewActive=false;$('modal').style.display='none'};
+function setScanHint(show){$('scanHint').classList.toggle('show',!!show)}
+function actionHint(text){$('actionNotice').textContent=text;$('actionNotice').classList.add('show')}
+$('gift').onclick=()=>{window.location.assign('https://labrie.ru/club')};
+$('about').onclick=()=>{window.location.assign('https://labrie.ru/resources')};
+$('replay').onclick=()=>{
+  if(!tracked){setScanHint(true);actionHint('Наведите камеру на сердце открытки, чтобы повторить волшебство.');return}
+  $('actionNotice').classList.remove('show');
+  $('actions').classList.remove('show');
+  trackingStarted=performance.now();
+  pausedAt=0;
+  message('Волшебство начинается · Огоньки на сердце');
+};
+// Переносим тот же световой эффект, что использовался в первой рабочей AR-сцене с домиком.
+function makeHouseHeartMagic(THREE){
+ heartFx=new THREE.Group();heartFx.position.set(0,-.01,.16);anchor.group.add(heartFx); // точка появления снова в центре сердца, как у первого домика
+ // Рисунок сердца на настоящей открытке НЕ подсвечиваем и не перерисовываем.
+ // Огоньки появляются именно ИЗ ЦЕНТРА сердца и гаснут по мере роста композиции.
+ for(let i=0;i<36;i++){
+  const geom=new THREE.CircleGeometry(.004+(i%5)*.0016,8);
+  const mat=new THREE.MeshBasicMaterial({color:i%4?0xffd89b:0xfff4d0,transparent:true,opacity:0,depthTest:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+  const p=new THREE.Mesh(geom,mat);
+  p.userData={phase:i*2.39996,radius:.11+((i*19)%23)*.008,velocity:.5+(i%8)*.15};
+  heartFx.add(p);dust.push(p);
+ }
+}
+function animateHouseHeartMagic(t){
+ const reveal=between(t,LIGHT_DURATION,LIGHT_DURATION+APPEAR_DURATION);
+ const phase=Math.min(1,t/LIGHT_DURATION);
+ const fade=1-reveal;
+ dust.forEach((p,i)=>{
+  const d=p.userData,theta=t*d.velocity+d.phase;
+  p.position.set(Math.cos(theta)*d.radius,Math.sin(theta)*d.radius*.78,.07+.02*Math.sin(theta*2));
+  p.material.opacity=(.25+.6*Math.abs(Math.sin(theta*1.3)))*phase*fade;
+  p.scale.setScalar(.7+Math.abs(Math.sin(theta))*1.2);
+ });
+ return reveal;
+}
+function closePreviewCamera(){if(previewStream){previewStream.getTracks().forEach(t=>t.stop());previewStream=null}if(previewCamera){previewCamera.remove();previewCamera=null}}
+$('start').onclick=async()=>{
+ $('start').disabled=true;$('start').textContent='Запрашиваем камеру…';$('error').textContent='';
+ try{
+  if(!window.isSecureContext)throw new Error('Для камеры требуется HTTPS');
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Камера недоступна в этом браузере');
+  // A user gesture immediately requests the actual camera; no remote asset waits first.
+  previewStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  previewCamera=document.createElement('video');previewCamera.id='livePreview';previewCamera.autoplay=true;previewCamera.muted=true;previewCamera.playsInline=true;previewCamera.srcObject=previewStream;$('ar').appendChild(previewCamera);
+  try{await previewCamera.play()}catch(e){console.warn('Camera preview',e)}
+  $('intro').classList.add('hidden');$('ui').style.display='block';setScanHint(true);message('Камера работает · Загружаем анимацию…');
+  await loadSheet();
+  const targetResponse=await fetch('./targets.mind');if(!targetResponse.ok)throw new Error('Не найден файл распознавания открытки');
+  const targetUrl=URL.createObjectURL(await targetResponse.blob());
+  message('Камера работает · Запускаем распознавание…');
+  const [THREE,{MindARThree}]=await Promise.all([import('three'),import('mindar-image-three')]);
+  mindar=new MindARThree({container:$('ar'),imageTargetSrc:targetUrl,maxTrack:1,filterMinCF:0.001,filterBeta:0.05,warmupTolerance:5,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+  anchor=mindar.addAnchor(0);
+  paint(ctxAR,0);sceneTexture=new THREE.CanvasTexture(canvasAR);sceneTexture.colorSpace=THREE.SRGBColorSpace;
+  sceneTexture.minFilter=THREE.LinearFilter;sceneTexture.magFilter=THREE.LinearFilter;
+  const mat=new THREE.MeshBasicMaterial({map:sceneTexture,transparent:true,alphaTest:.025,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
+  plane=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.9*H/W),mat);
+  // Вдвое больше прежнего размера, центр — непосредственно над сердцем открытки.
+  plane.position.set(0,0,.12);plane.scale.setScalar(.001);anchor.group.add(plane);
+  makeHouseHeartMagic(THREE);
+  anchor.onTargetFound=()=>{
+    const now=performance.now();
+    // Краткое исчезновение маркера не перезапускает анимацию и не заставляет сердце мигать.
+    if(!trackingStarted){trackingStarted=now}
+    else if(pausedAt){trackingStarted+=now-pausedAt}
+    pausedAt=0;tracked=true;setScanHint(false);
+    message('Открытка распознана · Сыры оживают из сердца');
+  };
+  anchor.onTargetLost=()=>{
+    if(tracked){pausedAt=performance.now()}
+    tracked=false;setScanHint(true);message('Снова наведите камеру на открытку');
+  };
+  closePreviewCamera();
+  await mindar.start();
+  message('Наведите камеру на сердце открытки');
+  mindar.renderer.setAnimationLoop(ms=>{
+    if(tracked){
+      const sec=(performance.now()-trackingStarted)/1000;
+      const reveal=animateHouseHeartMagic(sec);
+      // Пока горят огоньки, изображение скрыто. Затем растёт прямо из центра сердца.
+      plane.scale.setScalar(Math.max(.001,reveal));
+      plane.position.set(0,0,.12);
+      mat.opacity=Math.min(1,reveal*1.5);
+      // Сначала полное появление, затем раскол твёрдого Бельпера с сухими крошками,
+      // и только после этого тягучая сердцевина СЫРА С БЕЛОЙ ПЛЕСЕНЬЮ.
+      const cheeseSec=Math.max(0,sec-LIGHT_DURATION-APPEAR_DURATION);
+      if(cheeseSec<=CHEESE_DURATION+0.15){paint(ctxAR,cheeseSec);sceneTexture.needsUpdate=true;} // После окончания держим тот же финальный кадр
+      if(sec>=LIGHT_DURATION+APPEAR_DURATION+1.2){$('actions').classList.add('show')}
+      const stage=Math.min(sec,DURATION);
+      if(stage<LIGHT_DURATION)message('Волшебство начинается · Золотые огоньки');
+      else if(stage<LIGHT_DURATION+APPEAR_DURATION)message('Сыры появляются и вырастают из сердца');
+      else if(stage<LIGHT_DURATION+APPEAR_DURATION+4.6)message('Бельпер сухо раскалывается — без вытекания');
+      else message('Сыры раскрылись · Композиция неподвижна');
+    }else{
+      plane.scale.setScalar(.001);
+      dust.forEach(p=>p.material.opacity=0)
+    }
+    mindar.renderer.render(mindar.scene,mindar.camera);
+  });
+
+ }catch(e){fail(e);try{await mindar?.stop()}catch(_){};closePreviewCamera();$('intro').classList.remove('hidden');$('ui').style.display='none'}
+ finally{$('start').disabled=false;$('start').textContent='Открыть камеру'}
+};
+</script></body></html>
